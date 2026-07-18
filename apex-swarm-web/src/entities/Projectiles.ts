@@ -334,3 +334,350 @@ export class ScytheArcProjectile extends Projectile {
         ctx.restore();
     }
 }
+
+// ---------------------------------------------------------
+// EVOLVED PROJECTILES (PHASE 4)
+// ---------------------------------------------------------
+
+export class RailgunBeam extends Projectile {
+    private length: number = 800;
+    private hitSet: Set<Enemy> = new Set();
+    
+    constructor(x: number, y: number, angle: number, damage: number) {
+        super(x, y, angle, damage, 0);
+        this.color = '#38bdf8';
+        this.life = 0.25;
+        this.radius = 15; // beam width
+    }
+
+    public update(dt: number, _bounds: any, enemies: Enemy[], apexSystem: any, player: Player) {
+        this.life -= dt;
+        if (this.life <= 0) {
+            this.isDead = true;
+            return;
+        }
+
+        const endX = this.x + Math.cos(this.angle) * this.length;
+        const endY = this.y + Math.sin(this.angle) * this.length;
+
+        for (const e of enemies) {
+            if (e.isDead || this.hitSet.has(e)) continue;
+            
+            // Distance from point to line segment
+            const l2 = this.length * this.length;
+            if (l2 === 0) continue;
+            
+            let t = ((e.x - this.x) * (endX - this.x) + (e.y - this.y) * (endY - this.y)) / l2;
+            t = Math.max(0, Math.min(1, t));
+            
+            const projX = this.x + t * (endX - this.x);
+            const projY = this.y + t * (endY - this.y);
+            const dist = Math.hypot(e.x - projX, e.y - projY);
+
+            if (dist < this.radius + e.radius) {
+                this.hitSet.add(e);
+                
+                let finalDamage = this.damage;
+                let isCrit = false;
+                if (player.critChance > 0 && Math.random() < player.critChance) {
+                    finalDamage *= player.critDamage;
+                    isCrit = true;
+                }
+
+                const dmgDealt = Math.min(e.hp, finalDamage);
+                e.hp -= finalDamage;
+
+                const totalLifesteal = (apexSystem?.lifesteal ?? 0) + player.globalLifesteal;
+                if (totalLifesteal > 0) player.heal(dmgDealt * totalLifesteal);
+
+                Projectile.floatingTexts.push(new FloatingText(
+                    e.x, e.y - 10,
+                    isCrit ? `${Math.floor(finalDamage)} CRIT!` : String(Math.floor(finalDamage)),
+                    isCrit ? '#fbbf24' : '#93c5fd',
+                    0.5
+                ));
+            }
+        }
+    }
+
+    public draw(ctx: CanvasRenderingContext2D) {
+        ctx.save();
+        ctx.globalAlpha = this.life / 0.25;
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.angle);
+        
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = this.color;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, -this.radius, this.length, this.radius * 2);
+        
+        ctx.fillStyle = this.color;
+        ctx.fillRect(0, -this.radius + 2, this.length, this.radius * 2 - 4);
+        
+        ctx.restore();
+    }
+}
+
+export class SingularityRing extends Projectile {
+    private maxRadius: number = 150;
+    
+    constructor(player: Player, damage: number) {
+        super(player.x, player.y, 0, damage, 0);
+        this.color = '#c084fc'; // Purple
+        this.life = 4.0;
+        this.radius = 0;
+    }
+
+    public update(dt: number, _b: any, enemies: Enemy[], apexSystem: any, player: Player) {
+        this.life -= dt;
+        if (this.life <= 0) {
+            this.isDead = true;
+            return;
+        }
+
+        // Expand quickly, then hold
+        if (this.radius < this.maxRadius) {
+            this.radius += 300 * dt;
+        }
+
+        this.x = player.x;
+        this.y = player.y;
+
+        for (const e of enemies) {
+            if (e.isDead) continue;
+            const dist = Math.hypot(this.x - e.x, this.y - e.y);
+            if (dist < this.radius) {
+                // Pull enemy towards center
+                if (dist > 20) {
+                    const pullFactor = 60 * dt; // pixels per second pull
+                    e.x -= ((e.x - this.x) / dist) * pullFactor;
+                    e.y -= ((e.y - this.y) / dist) * pullFactor;
+                }
+
+                // Continuous damage
+                const d = this.damage * dt;
+                const dmgDealt = Math.min(e.hp, d);
+                e.hp -= d;
+
+                const totalLifesteal = (apexSystem?.lifesteal ?? 0) + player.globalLifesteal;
+                if (totalLifesteal > 0) player.heal(dmgDealt * totalLifesteal);
+            }
+        }
+    }
+
+    public draw(ctx: CanvasRenderingContext2D) {
+        ctx.save();
+        ctx.globalAlpha = Math.min(1, this.life);
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = this.color;
+        ctx.strokeStyle = this.color;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        // Inner fill
+        ctx.fillStyle = this.color;
+        ctx.globalAlpha = 0.2 * Math.min(1, this.life);
+        ctx.fill();
+        ctx.restore();
+    }
+}
+
+export class StormFrontPulse extends Projectile {
+    private maxRadius: number = 400;
+    private hitSet: Set<Enemy> = new Set();
+    
+    constructor(player: Player, damage: number) {
+        super(player.x, player.y, 0, damage, 0);
+        this.color = '#fde047'; // Yellow
+        this.life = 0.5;
+        this.radius = 0;
+    }
+
+    public update(dt: number, _b: any, enemies: Enemy[], apexSystem: any, player: Player) {
+        this.life -= dt;
+        if (this.life <= 0) {
+            this.isDead = true;
+            return;
+        }
+
+        this.radius += 800 * dt;
+        this.x = player.x;
+        this.y = player.y;
+
+        for (const e of enemies) {
+            if (e.isDead || this.hitSet.has(e)) continue;
+            const dist = Math.hypot(this.x - e.x, this.y - e.y);
+            if (dist < this.radius) {
+                this.hitSet.add(e);
+                
+                // STUN logic will be handled in Enemy class by adding stunTimer
+                (e as any).stunTimer = 1.5; 
+
+                let finalDamage = this.damage;
+                let isCrit = false;
+                if (player.critChance > 0 && Math.random() < player.critChance) {
+                    finalDamage *= player.critDamage;
+                    isCrit = true;
+                }
+
+                const dmgDealt = Math.min(e.hp, finalDamage);
+                e.hp -= finalDamage;
+
+                const totalLifesteal = (apexSystem?.lifesteal ?? 0) + player.globalLifesteal;
+                if (totalLifesteal > 0) player.heal(dmgDealt * totalLifesteal);
+
+                Projectile.floatingTexts.push(new FloatingText(
+                    e.x, e.y - 10,
+                    isCrit ? `${Math.floor(finalDamage)} CRIT!` : String(Math.floor(finalDamage)),
+                    isCrit ? '#fbbf24' : '#fef08a',
+                    0.5
+                ));
+            }
+        }
+    }
+
+    public draw(ctx: CanvasRenderingContext2D) {
+        ctx.save();
+        ctx.globalAlpha = this.life / 0.5;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = this.color;
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        // Inner lightning
+        ctx.strokeStyle = this.color;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius - 4, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+    }
+}
+
+export class RealityTearPulse extends Projectile {
+    private maxRadius: number = 200;
+    private hitSet: Set<Enemy> = new Set();
+    
+    constructor(player: Player, damage: number) {
+        super(player.x, player.y, 0, damage, 0);
+        this.color = '#ef4444'; // Red
+        this.life = 0.4;
+        this.radius = 0;
+    }
+
+    public update(dt: number, _b: any, enemies: Enemy[], apexSystem: any, player: Player) {
+        this.life -= dt;
+        if (this.life <= 0) {
+            this.isDead = true;
+            return;
+        }
+
+        this.radius += 500 * dt;
+        this.x = player.x;
+        this.y = player.y;
+
+        for (const e of enemies) {
+            if (e.isDead || this.hitSet.has(e)) continue;
+            const dist = Math.hypot(this.x - e.x, this.y - e.y);
+            if (dist < this.radius) {
+                this.hitSet.add(e);
+
+                let finalDamage = this.damage;
+                let isCrit = false;
+                if (player.critChance > 0 && Math.random() < player.critChance) {
+                    finalDamage *= player.critDamage;
+                    isCrit = true;
+                }
+
+                const dmgDealt = Math.min(e.hp, finalDamage);
+                e.hp -= finalDamage;
+
+                // 100% lifesteal bonus for Reality Tear + normal lifesteal
+                const totalLifesteal = 1.0 + (apexSystem?.lifesteal ?? 0) + player.globalLifesteal;
+                player.heal(dmgDealt * totalLifesteal);
+
+                Projectile.floatingTexts.push(new FloatingText(
+                    e.x, e.y - 10,
+                    isCrit ? `${Math.floor(finalDamage)} CRIT!` : String(Math.floor(finalDamage)),
+                    isCrit ? '#fbbf24' : '#fca5a5',
+                    0.5
+                ));
+            }
+        }
+    }
+
+    public draw(ctx: CanvasRenderingContext2D) {
+        ctx.save();
+        ctx.globalAlpha = this.life / 0.4;
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = this.color;
+        ctx.fillStyle = this.color;
+        
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Cutout center
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius * 0.8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+}
+
+export class HiveMindLaser extends Projectile {
+    private sourceX: number;
+    private sourceY: number;
+    private target: Enemy | null;
+    
+    constructor(sourceX: number, sourceY: number, target: Enemy, damage: number) {
+        super(sourceX, sourceY, 0, damage, 0);
+        this.sourceX = sourceX;
+        this.sourceY = sourceY;
+        this.target = target;
+        this.color = '#f0abfc'; // Pink
+        this.life = 0.1; // 1 frame
+        this.radius = 2;
+    }
+
+    public update(dt: number, _b: any, _e: Enemy[], apexSystem: any, player: Player) {
+        this.life -= dt;
+        if (this.life <= 0) {
+            this.isDead = true;
+            return;
+        }
+
+        if (this.target && !this.target.isDead) {
+            const d = this.damage * dt; // Continuous DPS
+            const dmgDealt = Math.min(this.target.hp, d);
+            this.target.hp -= d;
+
+            const totalLifesteal = (apexSystem?.lifesteal ?? 0) + player.globalLifesteal;
+            if (totalLifesteal > 0) player.heal(dmgDealt * totalLifesteal);
+        } else {
+            this.isDead = true;
+        }
+    }
+
+    public draw(ctx: CanvasRenderingContext2D) {
+        if (!this.target || this.target.isDead) return;
+        
+        ctx.save();
+        ctx.strokeStyle = this.color;
+        ctx.lineWidth = 2;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = this.color;
+        
+        ctx.beginPath();
+        ctx.moveTo(this.sourceX, this.sourceY);
+        ctx.lineTo(this.target.x, this.target.y);
+        ctx.stroke();
+        ctx.restore();
+    }
+}
