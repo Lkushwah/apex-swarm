@@ -1,5 +1,5 @@
 // -------------------------------------------------------
-// Upgrade Definitions – single source of truth for the GDD
+// Upgrade Definitions – single source of truth for the GDD §11
 // -------------------------------------------------------
 
 export interface RunUpgrade {
@@ -110,13 +110,73 @@ export const PERM_UPGRADES: PermUpgrade[] = [
         maxLevel: 5,
         baseCost: 40,
         costPerLevel: 20,
-        apply: (p, lvl) => { p.magnetRadius = (p.magnetRadius || 100) + 20 * lvl; }
+        apply: (p, lvl) => { p.magnetRadius = 100 + 20 * lvl; }
     },
     {
-        id: 'perm_apex',
+        id: 'perm_armor',
+        name: 'Plated Hull',
+        icon: '🔰',
+        description: '+1 flat Armor per level.',
+        maxLevel: 5,
+        baseCost: 70,
+        costPerLevel: 35,
+        apply: (p, lvl) => { p.armor += lvl; }
+    },
+    {
+        id: 'perm_regen',
+        name: 'Bio Regen',
+        icon: '💚',
+        description: '+0.2 HP/s regen per level.',
+        maxLevel: 5,
+        baseCost: 100,
+        costPerLevel: 50,
+        apply: (p, lvl) => { p.hpRegen = 0.2 * lvl; }
+    },
+    {
+        id: 'perm_reroll',
+        name: 'Second Chance',
+        icon: '🔄',
+        description: '+1 free reroll per run per level.',
+        maxLevel: 3,
+        baseCost: 120,
+        costPerLevel: 60,
+        apply: (_p, _lvl) => { /* Read by LevelUpUI at run start */ }
+    },
+    {
+        id: 'perm_banish',
+        name: 'Pruning Protocol',
+        icon: '🚫',
+        description: '+1 free banish per run per level.',
+        maxLevel: 3,
+        baseCost: 120,
+        costPerLevel: 60,
+        apply: (_p, _lvl) => { /* Read by LevelUpUI at run start */ }
+    },
+    {
+        id: 'perm_apex_cap',
+        name: 'Apex Capacity',
+        icon: '🔋',
+        description: '+10% max Apex Meter overflow per level.',
+        maxLevel: 5,
+        baseCost: 110,
+        costPerLevel: 55,
+        apply: (_p, _lvl) => { /* Applied by ApexSystem */ }
+    },
+    {
+        id: 'perm_apex_power',
         name: 'Apex Amplifier',
         icon: '🔥',
-        description: '+5% APEX MODE damage and duration per level.',
+        description: '+5% APEX dmg and +0.5s duration per level.',
+        maxLevel: 5,
+        baseCost: 130,
+        costPerLevel: 65,
+        apply: (_p, _lvl) => { /* Applied by ApexSystem */ }
+    },
+    {
+        id: 'perm_apex_fill',
+        name: 'Resonance Core',
+        icon: '⚡',
+        description: '+6% Apex Meter fill rate per level.',
         maxLevel: 5,
         baseCost: 100,
         costPerLevel: 50,
@@ -131,5 +191,18 @@ export const PERM_UPGRADES: PermUpgrade[] = [
         baseCost: 90,
         costPerLevel: 45,
         apply: (_p, _lvl) => { /* Applied by SaveManager at run end */ }
+    },
+    {
+        id: 'perm_loadout',
+        name: 'Extra Slot',
+        icon: '➕',
+        description: '+1 active weapon OR passive slot per level.',
+        maxLevel: 2,
+        baseCost: 200,
+        costPerLevel: 100,
+        apply: (p, lvl) => { 
+            // Give one extra weapon slot per level (player chooses allocation later)
+            p.maxWeaponSlots = 6 + lvl;
+        }
     }
 ];

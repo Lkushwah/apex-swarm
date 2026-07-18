@@ -39,6 +39,13 @@ export class Player {
     public maxDashCharges: number = 1;
     public globalLifesteal: number = 0;
 
+    // Real properties (no more `as any` casts)
+    public magnetRadius: number = 100;
+    public creditMultiplier: number = 1.0;
+    public hpRegen: number = 0; // HP per second, from perm_regen
+    public maxWeaponSlots: number = 6;
+    public maxPassiveSlots: number = 6;
+
     constructor(x: number, y: number) {
         this.x = x;
         this.y = y;
@@ -72,6 +79,11 @@ export class Player {
 
         this.x = Math.max(this.radius, Math.min(bounds.width - this.radius, this.x));
         this.y = Math.max(this.radius, Math.min(bounds.height - this.radius, this.y));
+
+        // HP Regen
+        if (this.hpRegen > 0 && this.hp < this.maxHp) {
+            this.hp = Math.min(this.maxHp, this.hp + this.hpRegen * dt);
+        }
     }
 
     public dash(targetPos: { x: number, y: number }) {
@@ -122,8 +134,9 @@ export class Player {
 
 
     public takeDamage(amount: number) {
-        this.hp -= amount;
-        // Check for game over in GameEngine
+        // Apply armor reduction — at least 1 damage always gets through
+        const reduced = Math.max(1, amount - this.armor);
+        this.hp -= reduced;
     }
 
     public heal(amount: number) {

@@ -8,6 +8,7 @@ import { Player } from './entities/Player';
 import { Enemy } from './entities/Enemy';
 import { Projectile } from './entities/Projectile';
 import { Collectible } from './entities/Collectible';
+import { Particle, FloatingText, ApexShard, createParticles, createApexShards } from './entities/Particles';
 
 import { WeaponSystem } from './systems/WeaponSystem';
 import { WaveManager } from './systems/WaveManager';
@@ -35,6 +36,9 @@ let player: Player;
 let enemies: Enemy[] = [];
 let projectiles: Projectile[] = [];
 let collectibles: Collectible[] = [];
+let particles: Particle[] = [];
+let floatingTexts: FloatingText[] = [];
+let apexShards: ApexShard[] = [];
 let creditsEarnedThisRun: number = 0;
 let killsThisRun: number = 0;
 
@@ -50,17 +54,16 @@ const levelUpUI = new LevelUpUI(() => {
 
 // ---- Permanent Upgrades Application ----
 function applyPermanentUpgrades(p: Player) {
-    const creditMultiplierUpg = PERM_UPGRADES.find(u => u.id === 'perm_credits')!;
     for (const upg of PERM_UPGRADES) {
         const level = saveManager.getUpgradeLevel(upg.id);
-        if (level > 0 && upg.id !== 'perm_credits') {
+        if (level > 0 && upg.id !== 'perm_credits' && upg.id !== 'perm_reroll' && upg.id !== 'perm_banish'
+            && upg.id !== 'perm_apex_cap' && upg.id !== 'perm_apex_power' && upg.id !== 'perm_apex_fill') {
             upg.apply(p, level);
         }
     }
     // Store credit multiplier on player for the run
     const creditLevel = saveManager.getUpgradeLevel('perm_credits');
-    (p as any).creditMultiplier = 1 + creditLevel * 0.1;
-    void creditMultiplierUpg; // used above
+    p.creditMultiplier = 1 + creditLevel * 0.1;
 }
 
 // ---- Start/Restart Game ----
@@ -72,17 +75,35 @@ function startGame() {
     enemies = [];
     projectiles = [];
     collectibles = [];
+    particles = [];
+    floatingTexts = [];
+    apexShards = [];
     creditsEarnedThisRun = 0;
     killsThisRun = 0;
+
+    // Wire particle/text arrays into Projectile's static feedback system
+    Projectile.floatingTexts = floatingTexts;
+    Projectile.particles = [];
 
     weaponSystem = new WeaponSystem(player);
     waveManager = new WaveManager(bounds);
     apexSystem = new ApexSystem(player);
 
-    // Apply perm_apex bonus to apex system
-    const apexPermLevel = saveManager.getUpgradeLevel('perm_apex');
-    apexSystem.durationBonus = apexPermLevel * 0.5;
-    apexSystem.damageBonus   = apexPermLevel * 0.05;
+    // Apply Apex perm upgrades to apex system
+    const apexPowerLevel = saveManager.getUpgradeLevel('perm_apex_power');
+    apexSystem.durationBonus = apexPowerLevel * 0.5;
+    apexSystem.damageBonus   = apexPowerLevel * 0.05;
+
+    const apexCapLevel = saveManager.getUpgradeLevel('perm_apex_cap');
+    apexSystem.overflowCap = apexCapLevel * 10;
+
+    const apexFillLevel = saveManager.getUpgradeLevel('perm_apex_fill');
+    apexSystem.fillRateBonus = apexFillLevel * 0.06;
+
+    // Set reroll/banish charges from perm upgrades
+    const rerollLevel = saveManager.getUpgradeLevel('perm_reroll');
+    const banishLevel = saveManager.getUpgradeLevel('perm_banish');
+    levelUpUI.setCharges(1 + rerollLevel, 1 + banishLevel);
 
     gameState = 'PLAYING';
     uiManager.showHUD();
@@ -90,9 +111,8 @@ function startGame() {
 
 function handleGameOver() {
     gameState = 'GAMEOVER';
-    const creditMultiplier = (player as any).creditMultiplier ?? 1;
     const credits = Math.floor(
-        (waveManager.survivalTime * 0.5 + creditsEarnedThisRun) * creditMultiplier
+        (waveManager.survivalTime * 0.5 + creditsEarnedThisRun) * player.creditMultiplier
     );
     saveManager.addCredits(credits);
     uiManager.showGameOver(waveManager.survivalTime, credits, player, killsThisRun);
@@ -102,7 +122,6 @@ function handleGameOver() {
 document.getElementById('start-btn')!.addEventListener('click', startGame);
 document.getElementById('restart-btn')!.addEventListener('click', startGame);
 document.getElementById('power-upgrades-btn')!.addEventListener('click', () => {
-    uiManager['mainMenu']?.classList.add('hidden');
     document.getElementById('main-menu')?.classList.add('hidden');
     powerUpgradesUI.show();
 });
@@ -130,7 +149,7 @@ window.addEventListener('pointerup', (e) => {
     if ((e.target as HTMLElement).tagName === 'BUTTON') return;
     
     const now = performance.now();
-    if (now - lastTapTime < 300) { // 300ms double-tap threshold
+    if (now - lastTapTime < 300) {
         apexSystem.manualTrigger();
     }
     lastTapTime = now;
@@ -156,6 +175,11 @@ const gameLoop = new GameLoop(
             const activeDur = 8 + apexSystem.durationBonus;
             const apexTimer = (apexSystem as any).timer as number;
             uiManager.showApexBanner(apexTimer / activeDur);
+            
+            // Spawn Apex Shards around the player
+            if (Math.random() < 0.3) {
+                createApexShards(apexShards, player.x + (Math.random() - 0.5) * 40, player.y + (Math.random() - 0.5) * 40, 1);
+            }
         } else if (apexSystem.getState() === 'SPENT') {
             uiManager.hideApexBanner();
         }
@@ -171,7 +195,6 @@ const gameLoop = new GameLoop(
         // Player
         const canTakeDamage = !apexSystem.isInvincible;
         player.update(scaledDt, inputManager.getPointerPosition(), bounds);
-        if (player.hp <= 0) { handleGameOver(); return; }
 
         // Projectiles
         for (let i = projectiles.length - 1; i >= 0; i--) {
@@ -179,6 +202,12 @@ const gameLoop = new GameLoop(
             p.update(scaledDt, bounds, enemies, apexSystem, player);
             if (p.isDead) { projectiles.splice(i, 1); }
         }
+
+        // Process deferred particle spawns from Projectile.particles
+        for (const pd of Projectile.particles) {
+            createParticles(particles, pd.x, pd.y, pd.color, pd.count);
+        }
+        Projectile.particles.length = 0;
 
         // Enemies
         const hpBefore = player.hp;
@@ -190,6 +219,10 @@ const gameLoop = new GameLoop(
                 e.isDead = true;
                 apexSystem.addKill(); // fill meter
                 killsThisRun++;
+                
+                // Death particles
+                createParticles(particles, e.x, e.y, e.color, 8);
+
                 if (Math.random() > 0.5) collectibles.push(new Collectible(e.x, e.y, 'xp'));
                 if (Math.random() < 0.1) collectibles.push(new Collectible(e.x, e.y, 'credit'));
                 enemies.splice(i, 1);
@@ -197,39 +230,71 @@ const gameLoop = new GameLoop(
             }
             
             e.update(scaledDt, player, canTakeDamage);
-            if (e.isDead) enemies.splice(i, 1); // e.g. kamikaze swarmer
-        }
-        if (player.hp < hpBefore) {
-            apexSystem.addDamage(hpBefore - player.hp);
+            if (e.isDead) {
+                // Self-destruct enemies (swarmer contact, etc.)
+                createParticles(particles, e.x, e.y, e.color, 5);
+                apexSystem.addKill();
+                killsThisRun++;
+                if (Math.random() > 0.5) collectibles.push(new Collectible(e.x, e.y, 'xp'));
+                if (Math.random() < 0.1) collectibles.push(new Collectible(e.x, e.y, 'credit'));
+                enemies.splice(i, 1);
+            }
         }
         
-        // Safety net trigger if player is about to die but has full meter
+        // Track damage taken for Apex meter
+        if (player.hp < hpBefore) {
+            const dmgTaken = hpBefore - player.hp;
+            apexSystem.addDamage(dmgTaken);
+            // Hit flash
+            createParticles(particles, player.x, player.y, '#ef4444', 4);
+        }
+        
+        // Safety net: AFTER enemy processing, check if player died
         if (player.hp <= 0) {
             if (apexSystem.canTrigger()) {
                 apexSystem.triggerSafetyNet();
+                player.hp = 1; // Survive with 1 HP, lifesteal will heal during Apex
             } else {
-                handleGameOver(); 
+                handleGameOver();
                 return;
             }
         }
 
         // Collectibles
-        const magnetRadius = (player as any).magnetRadius ?? 100;
         for (let i = collectibles.length - 1; i >= 0; i--) {
             const c = collectibles[i];
-            const collected = c.update(scaledDt, player, magnetRadius);
+            const collected = c.update(scaledDt, player, player.magnetRadius);
             if (collected) {
                 if (c.type === 'xp') {
                     const didLevel = player.addXp(c.xpValue);
+                    floatingTexts.push(new FloatingText(c.x, c.y, `+${c.xpValue} XP`, '#4ade80', 0.5));
                     if (didLevel) {
                         gameState = 'LEVELUP';
                         levelUpUI.show(player);
                     }
                 } else if (c.type === 'credit') {
                     creditsEarnedThisRun++;
+                    floatingTexts.push(new FloatingText(c.x, c.y, '+1 💰', '#fbbf24', 0.5));
                 }
                 collectibles.splice(i, 1);
             }
+        }
+
+        // Update particles, floating texts, and shards
+        for (let i = particles.length - 1; i >= 0; i--) {
+            if (!particles[i].update(scaledDt)) particles.splice(i, 1);
+        }
+        for (let i = floatingTexts.length - 1; i >= 0; i--) {
+            if (!floatingTexts[i].update(scaledDt)) floatingTexts.splice(i, 1);
+        }
+        for (let i = apexShards.length - 1; i >= 0; i--) {
+            if (!apexShards[i].update(scaledDt)) apexShards.splice(i, 1);
+        }
+
+        // Apply Apex Capacitor passive (read from player's passives)
+        const apexCapPassive = player.passives.find(p => p.id === 'apex_capacitor');
+        if (apexCapPassive) {
+            apexSystem.fillRateBonus = (saveManager.getUpgradeLevel('perm_apex_fill') * 0.06) + (apexCapPassive.level * 0.08);
         }
 
         uiManager.updateHUD(player.hp, player.maxHp, player.xp, player.xpToNext, player.level, waveManager.survivalTime, saveManager.getCredits(), apexSystem.meter);
@@ -248,10 +313,17 @@ const gameLoop = new GameLoop(
             renderer.drawApexGlow();
         }
 
+        // Draw Apex Shards (behind everything else)
+        apexShards.forEach(s => s.draw(ctx));
+
         collectibles.forEach(c => c.draw(ctx, waveManager?.survivalTime ?? 0));
         enemies.forEach(e => e.draw(ctx));
         projectiles.forEach(p => p.draw(ctx));
         if (player) player.draw(ctx, apexSystem?.getState());
+
+        // Particles and floating text on top
+        particles.forEach(p => p.draw(ctx));
+        floatingTexts.forEach(ft => ft.draw(ctx));
     }
 );
 

@@ -6,23 +6,58 @@ import { EvolutionSystem } from '../systems/EvolutionSystem';
 export class LevelUpUI {
     private screen = document.getElementById('levelup-screen')!;
     private grid = document.getElementById('levelup-grid')!;
+    private rerollBtn = document.getElementById('reroll-btn')! as HTMLButtonElement;
+    private banishBtn = document.getElementById('banish-btn')! as HTMLButtonElement;
     private onPick: () => void;
 
-    // TODO: implement reroll/banish charges
+    // Reroll/Banish state
     private banishedIds: Set<string> = new Set();
+    private rerollCharges: number = 1;
+    private banishCharges: number = 1;
+    private currentPlayer: Player | null = null;
+    private isBanishMode: boolean = false;
 
     constructor(onPick: () => void) {
         this.onPick = onPick;
+
+        this.rerollBtn.addEventListener('click', () => {
+            if (this.rerollCharges > 0 && this.currentPlayer) {
+                this.rerollCharges--;
+                this.show(this.currentPlayer);
+            }
+        });
+
+        this.banishBtn.addEventListener('click', () => {
+            if (this.banishCharges > 0) {
+                this.isBanishMode = !this.isBanishMode;
+                this.updateButtonLabels();
+                // Toggle visual state on cards
+                const cards = this.grid.querySelectorAll('.levelup-card');
+                cards.forEach(c => {
+                    (c as HTMLElement).style.borderColor = this.isBanishMode ? '#ef4444' : '#334155';
+                });
+            }
+        });
+    }
+
+    // Called at run start to set charges from perm upgrades
+    public setCharges(rerollCharges: number, banishCharges: number) {
+        this.rerollCharges = rerollCharges;
+        this.banishCharges = banishCharges;
+        this.banishedIds.clear();
+        this.isBanishMode = false;
     }
 
     public show(player: Player) {
+        this.currentPlayer = player;
         const pool = this.buildPool(player);
         const choices = pool.sort(() => Math.random() - 0.5).slice(0, 3);
         
         this.grid.innerHTML = '';
+        this.updateButtonLabels();
 
         if (choices.length === 0) {
-            // Nothing to upgrade, just give some credits
+            // Nothing to upgrade, just resume
             this.hide();
             this.onPick();
             return;
@@ -44,6 +79,16 @@ export class LevelUpUI {
             `;
             
             card.addEventListener('click', () => {
+                if (this.isBanishMode) {
+                    // Banish this item from the pool
+                    this.banishedIds.add(data.id);
+                    this.banishCharges--;
+                    this.isBanishMode = false;
+                    // Re-show with new pool (minus banished item)
+                    this.show(player);
+                    return;
+                }
+
                 if (isWeapon) {
                     const w = player.weapons.find(x => x.id === data.id);
                     if (w) w.level = nextLvl;
@@ -68,11 +113,24 @@ export class LevelUpUI {
         this.screen.classList.remove('hidden');
     }
 
+    private updateButtonLabels() {
+        this.rerollBtn.textContent = `REROLL (${this.rerollCharges})`;
+        this.rerollBtn.disabled = this.rerollCharges <= 0;
+        this.rerollBtn.style.opacity = this.rerollCharges > 0 ? '1' : '0.4';
+
+        this.banishBtn.textContent = this.isBanishMode ? 'PICK TO BANISH' : `BANISH (${this.banishCharges})`;
+        this.banishBtn.disabled = this.banishCharges <= 0 && !this.isBanishMode;
+        this.banishBtn.style.opacity = (this.banishCharges > 0 || this.isBanishMode) ? '1' : '0.4';
+        this.banishBtn.style.borderColor = this.isBanishMode ? '#ef4444' : '';
+        this.banishBtn.style.color = this.isBanishMode ? '#ef4444' : '';
+    }
+
     private buildPool(player: Player) {
         const pool: { type: 'weapon' | 'passive', data: WeaponData | PassiveData, nextLevel: number }[] = [];
         
         // Weapons
-        const hasOpenWeaponSlot = player.weapons.length < 6;
+        const maxWeapons = player.maxWeaponSlots ?? 6;
+        const hasOpenWeaponSlot = player.weapons.length < maxWeapons;
         for (const wData of WEAPONS) {
             if (this.banishedIds.has(wData.id)) continue;
             
@@ -87,7 +145,8 @@ export class LevelUpUI {
         }
         
         // Passives
-        const hasOpenPassiveSlot = player.passives.length < 6;
+        const maxPassives = player.maxPassiveSlots ?? 6;
+        const hasOpenPassiveSlot = player.passives.length < maxPassives;
         for (const pData of PASSIVES) {
             if (this.banishedIds.has(pData.id)) continue;
             
@@ -106,5 +165,6 @@ export class LevelUpUI {
 
     public hide() {
         this.screen.classList.add('hidden');
+        this.isBanishMode = false;
     }
 }

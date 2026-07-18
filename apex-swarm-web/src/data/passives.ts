@@ -95,7 +95,8 @@ export const PASSIVES: PassiveData[] = [
         description: '+8% faster Apex Meter fill rate per level',
         maxLevel: 5,
         apply: (_player, _level, _ws) => {
-            // ApexSystem reads this or we inject it
+            // Wired in main.ts: reads player.passives for apex_capacitor level
+            // and sets apexSystem.fillRateBonus = level * 0.08
         }
     },
     {

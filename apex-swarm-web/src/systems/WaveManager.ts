@@ -1,4 +1,13 @@
-import { Enemy } from '../entities/Enemy';
+import { Enemy, ENEMY_CONFIGS, type EnemyType } from '../entities/Enemy';
+
+// -------------------------------------------------------
+// WaveManager — weighted spawn system per GDD §8.4
+// -------------------------------------------------------
+
+interface SpawnWeight {
+    type: EnemyType;
+    weight: number;
+}
 
 export class WaveManager {
     public survivalTime: number = 0;
@@ -22,17 +31,87 @@ export class WaveManager {
         }
     }
 
-    private spawnEnemy(enemies: Enemy[]) {
+    private getSpawnWeights(): SpawnWeight[] {
+        const t = this.survivalTime;
+        const weights: SpawnWeight[] = [];
+
+        // Swarmer: always available, dominant early, declining share
+        weights.push({ type: 'swarmer', weight: Math.max(10, 60 - t * 0.3) });
+
+        // Brute: unlocks at 1:00
+        if (t >= ENEMY_CONFIGS.brute.unlockTime) {
+            weights.push({ type: 'brute', weight: Math.min(20, 5 + (t - 60) * 0.1) });
+        }
+
+        // Shooter: unlocks at 2:00
+        if (t >= ENEMY_CONFIGS.shooter.unlockTime) {
+            weights.push({ type: 'shooter', weight: Math.min(18, 5 + (t - 120) * 0.08) });
+        }
+
+        // Shielder: unlocks at 3:00
+        if (t >= ENEMY_CONFIGS.shielder.unlockTime) {
+            weights.push({ type: 'shielder', weight: Math.min(15, 3 + (t - 180) * 0.06) });
+        }
+
+        // Phasewraith: unlocks at 5:00
+        if (t >= ENEMY_CONFIGS.phasewraith.unlockTime) {
+            weights.push({ type: 'phasewraith', weight: Math.min(12, 3 + (t - 300) * 0.05) });
+        }
+
+        // Bulwark Drone: unlocks at 7:00
+        if (t >= ENEMY_CONFIGS.bulwark_drone.unlockTime) {
+            weights.push({ type: 'bulwark_drone', weight: Math.min(10, 2 + (t - 420) * 0.04) });
+        }
+
+        // Glitch Swarm: unlocks at 9:00, becomes a larger share late
+        if (t >= ENEMY_CONFIGS.glitch_swarm.unlockTime) {
+            weights.push({ type: 'glitch_swarm', weight: Math.min(25, 5 + (t - 540) * 0.15) });
+        }
+
+        return weights;
+    }
+
+    private pickEnemyType(): EnemyType {
+        const weights = this.getSpawnWeights();
+        const totalWeight = weights.reduce((sum, w) => sum + w.weight, 0);
+        let roll = Math.random() * totalWeight;
+
+        for (const w of weights) {
+            roll -= w.weight;
+            if (roll <= 0) return w.type;
+        }
+
+        return 'swarmer'; // fallback
+    }
+
+    private getSpawnPosition(): { x: number, y: number } {
         let x = 0;
         let y = 0;
+        const margin = 40;
         
         const side = Math.floor(Math.random() * 4);
-        if (side === 0) { x = Math.random() * this.bounds.width; y = -30; }
-        else if (side === 1) { x = this.bounds.width + 30; y = Math.random() * this.bounds.height; }
-        else if (side === 2) { x = Math.random() * this.bounds.width; y = this.bounds.height + 30; }
-        else { x = -30; y = Math.random() * this.bounds.height; }
+        if (side === 0) { x = Math.random() * this.bounds.width; y = -margin; }
+        else if (side === 1) { x = this.bounds.width + margin; y = Math.random() * this.bounds.height; }
+        else if (side === 2) { x = Math.random() * this.bounds.width; y = this.bounds.height + margin; }
+        else { x = -margin; y = Math.random() * this.bounds.height; }
 
+        return { x, y };
+    }
+
+    private spawnEnemy(enemies: Enemy[]) {
         const timeScale = 1 + (this.survivalTime / 60);
-        enemies.push(new Enemy(x, y, timeScale));
+        const type = this.pickEnemyType();
+        const pos = this.getSpawnPosition();
+
+        if (type === 'glitch_swarm') {
+            // Spawn as a cluster of 5
+            for (let i = 0; i < 5; i++) {
+                const offsetX = (Math.random() - 0.5) * 30;
+                const offsetY = (Math.random() - 0.5) * 30;
+                enemies.push(new Enemy(pos.x + offsetX, pos.y + offsetY, timeScale, 'glitch_swarm'));
+            }
+        } else {
+            enemies.push(new Enemy(pos.x, pos.y, timeScale, type));
+        }
     }
 }

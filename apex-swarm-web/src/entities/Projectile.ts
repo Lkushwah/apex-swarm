@@ -1,5 +1,6 @@
 import { Enemy } from './Enemy';
 import { Player } from './Player';
+import { type FloatingText } from './Particles';
 
 export class Projectile {
     public x: number;
@@ -11,6 +12,10 @@ export class Projectile {
     public color: string = '#fde047'; // Yellow 300
     public life: number = 2; // seconds
     public isDead: boolean = false;
+
+    // Shared arrays for feedback (set by main.ts)
+    public static floatingTexts: FloatingText[] = [];
+    public static particles: { x: number, y: number, color: string, count: number }[] = [];
 
     constructor(x: number, y: number, angle: number, damage: number, speed: number) {
         this.x = x;
@@ -45,15 +50,50 @@ export class Projectile {
     }
 
     protected hitEnemy(e: Enemy, apexSystem: any, player: Player, _enemies: Enemy[]) {
-        const dmgDealt = Math.min(e.hp, this.damage);
-        e.hp -= this.damage;
+        // Crit roll
+        let finalDamage = this.damage;
+        let isCrit = false;
+        if (player.critChance > 0 && Math.random() < player.critChance) {
+            finalDamage *= player.critDamage;
+            isCrit = true;
+        }
+
+        const dmgDealt = Math.min(e.hp, finalDamage);
+        e.hp -= finalDamage;
         this.isDead = true; // By default, die on first hit
         
-        if (apexSystem.lifesteal > 0) {
-            player.heal(dmgDealt * apexSystem.lifesteal);
+        // Lifesteal: Apex lifesteal + player global lifesteal
+        const totalLifesteal = (apexSystem?.lifesteal ?? 0) + player.globalLifesteal;
+        if (totalLifesteal > 0) {
+            const healAmount = dmgDealt * totalLifesteal;
+            player.heal(healAmount);
+            // +HP floating text
+            if (healAmount >= 1) {
+                Projectile.floatingTexts.push({
+                    x: player.x, y: player.y - 20,
+                    text: `+${Math.floor(healAmount)} HP`,
+                    color: '#4ade80',
+                    life: 0.6, maxLife: 0.6, vy: -40
+                } as FloatingText);
+            }
         }
-        // Kills and drops are handled by main.ts iterating over enemies, or we can handle it here?
-        // Let's let main.ts handle enemy death drops for consistency.
+
+        // Damage number floating text
+        const dmgColor = isCrit ? '#fbbf24' : '#fca5a5';
+        const dmgText = isCrit ? `${Math.floor(finalDamage)} CRIT!` : String(Math.floor(finalDamage));
+        Projectile.floatingTexts.push({
+            x: e.x, y: e.y - 10,
+            text: dmgText,
+            color: dmgColor,
+            life: 0.5, maxLife: 0.5, vy: -30
+        } as FloatingText);
+
+        // Hit particles
+        Projectile.particles.push({
+            x: this.x, y: this.y,
+            color: isCrit ? '#fbbf24' : this.color,
+            count: isCrit ? 6 : 3
+        });
     }
 
     public draw(ctx: CanvasRenderingContext2D, _time?: number) {
@@ -70,4 +110,3 @@ export class Projectile {
         ctx.stroke();
     }
 }
-
