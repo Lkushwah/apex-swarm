@@ -240,6 +240,7 @@ function handleGameOver() {
     }
     
     // Log run analytics to Firebase
+    analyticsLogger.updateStats(survivalTime, player.x, player.y, player.hp, player.level, totalKills, true);
     const runLog = analyticsLogger.getRunLog();
     analyticsLogger.logEvent('GAME_OVER', { finalLevel: player.level, finalKills: totalKills }, survivalTime);
     

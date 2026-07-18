@@ -38,8 +38,8 @@ export class AnalyticsLogger {
         });
     }
 
-    public updateStats(survivalTime: number, x: number, y: number, hp: number, level: number, kills: number) {
-        if (survivalTime - this.lastStatLogTime >= this.STAT_LOG_INTERVAL) {
+    public updateStats(survivalTime: number, x: number, y: number, hp: number, level: number, kills: number, force: boolean = false) {
+        if (force || survivalTime - this.lastStatLogTime >= this.STAT_LOG_INTERVAL) {
             this.statsTimeline.push({
                 survivalTime,
                 x: Math.round(x),
