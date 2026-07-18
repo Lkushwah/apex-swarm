@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Swarm Survival MVP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #0f172a; /* Slate 900 */
+            font-family: 'Inter', sans-serif;
+            touch-action: none; /* Prevent scroll on mobile */
+            color: white;
+        }
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(8px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+            transition: opacity 0.3s;
+        }
+        .hidden {
+            display: none !important;
+        }
+        .card {
+            background: linear-gradient(145deg, #1e293b, #0f172a);
+            border: 1px solid #334155;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: #3b82f6; /* Blue 500 */
+        }
+        /* HUD Styles */
+        #hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 20px;
+            pointer-events: none;
+            z-index: 10;
+            box-sizing: border-box;
+        }
+        .bar-container {
+            background: rgba(0,0,0,0.5);
+            border: 2px solid #334155;
+            border-radius: 999px;
+            overflow: hidden;
+            height: 24px;
+            width: 100%;
+            max-width: 400px;
+            margin-bottom: 8px;
+        }
+        .bar-fill {
+            height: 100%;
+            transition: width 0.2s ease-out;
+        }
+        #hp-fill { background: #ef4444; } /* Red */
+        #xp-fill { background: #3b82f6; } /* Blue */
+    </style>
+</head>
+<body>
+
+    <!-- Heads Up Display -->
+    <div id="hud" class="flex flex-col items-center">
+        <div class="flex justify-between w-full max-w-[400px] mb-1 px-2 text-sm font-bold text-slate-300">
+            <span id="level-text">LVL 1</span>
+            <span id="time-text">00:00</span>
+        </div>
+        <div class="bar-container relative">
+            <div id="xp-fill" class="bar-fill" style="width: 0%;"></div>
+            <span class="absolute inset-0 flex justify-center items-center text-xs font-bold text-white drop-shadow-md">XP</span>
+        </div>
+        <div class="bar-container relative h-[16px]">
+            <div id="hp-fill" class="bar-fill" style="width: 100%;"></div>
+        </div>
+    </div>
+
+    <!-- Start Screen -->
+    <div id="start-screen" class="overlay">
+        <h1 class="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400 mb-4 drop-shadow-lg">SWARM SURVIVOR</h1>
+        <p class="text-slate-300 mb-8 max-w-md text-center">Move with Mouse/Touch. You shoot automatically. Collect gems to level up and survive the horde.</p>
+        <button id="start-btn" class="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-full text-xl shadow-[0_0_15px_rgba(59,130,246,0.5)] transition-all transform hover:scale-105 active:scale-95">
+            START RUN
+        </button>
+    </div>
+
+    <!-- Level Up Screen -->
+    <div id="levelup-screen" class="overlay hidden">
+        <h2 class="text-4xl font-bold text-yellow-400 mb-2 drop-shadow-[0_0_10px_rgba(250,204,21,0.8)]">LEVEL UP!</h2>
+        <p class="text-slate-300 mb-8">Choose your upgrade</p>
+        <div class="flex flex-col md:flex-row gap-6 px-4 w-full max-w-4xl justify-center">
+            <!-- Cards generated dynamically -->
+            <button id="upgrade-dmg" class="card flex-1 p-6 rounded-2xl flex flex-col items-center text-center group cursor-pointer">
+                <div class="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mb-4 group-hover:bg-red-500/40 transition-colors">
+                    <span class="text-3xl">⚔️</span>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2">Damage Up</h3>
+                <p class="text-slate-400 text-sm">Increase bullet damage by 25%</p>
+            </button>
+            <button id="upgrade-spd" class="card flex-1 p-6 rounded-2xl flex flex-col items-center text-center group cursor-pointer">
+                <div class="w-16 h-16 rounded-full bg-yellow-500/20 flex items-center justify-center mb-4 group-hover:bg-yellow-500/40 transition-colors">
+                    <span class="text-3xl">⚡</span>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2">Fire Rate Up</h3>
+                <p class="text-slate-400 text-sm">Shoot 20% faster</p>
+            </button>
+            <button id="upgrade-mov" class="card flex-1 p-6 rounded-2xl flex flex-col items-center text-center group cursor-pointer">
+                <div class="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mb-4 group-hover:bg-green-500/40 transition-colors">
+                    <span class="text-3xl">👟</span>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2">Speed Up</h3>
+                <p class="text-slate-400 text-sm">Move 15% faster</p>
+            </button>
+        </div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="gameover-screen" class="overlay hidden">
+        <h2 class="text-6xl font-bold text-red-500 mb-4 drop-shadow-[0_0_15px_rgba(239,68,68,0.8)]">YOU DIED</h2>
+        <p id="survival-time" class="text-2xl text-slate-200 mb-8">Survived: 00:00</p>
+        <button id="restart-btn" class="px-8 py-4 bg-slate-700 hover:bg-slate-600 border border-slate-500 text-white font-bold rounded-full text-xl transition-all transform hover:scale-105 active:scale-95">
+            TRY AGAIN
+        </button>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // UI Elements
+        const uiStart = document.getElementById('start-screen');
+        const uiLevelUp = document.getElementById('levelup-screen');
+        const uiGameOver = document.getElementById('gameover-screen');
+        const btnStart = document.getElementById('start-btn');
+        const btnRestart = document.getElementById('restart-btn');
+        const hpFill = document.getElementById('hp-fill');
+        const xpFill = document.getElementById('xp-fill');
+        const levelText = document.getElementById('level-text');
+        const timeText = document.getElementById('time-text');
+        
+        // Upgrade Buttons
+        const btnUpgDmg = document.getElementById('upgrade-dmg');
+        const btnUpgSpd = document.getElementById('upgrade-spd');
+        const btnUpgMov = document.getElementById('upgrade-mov');
+
+        // Resize Canvas
+        let cw, ch;
+        function resize() {
+            cw = window.innerWidth;
+            ch = window.innerHeight;
+            canvas.width = cw;
+            canvas.height = ch;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Game State
+        let gameState = 'START'; // START, PLAYING, LEVELUP, GAMEOVER
+        let lastTime = 0;
+        let survivalTime = 0;
+        
+        // Entity Arrays
+        let enemies = [];
+        let bullets = [];
+        let gems = [];
+        let particles = [];
+        let floatingTexts = [];
+
+        // Input Tracking
+        const targetPos = { x: cw/2, y: ch/2 };
+
+        window.addEventListener('pointermove', (e) => {
+            if(gameState !== 'PLAYING') return;
+            targetPos.x = e.clientX;
+            targetPos.y = e.clientY;
+        });
+
+        class Player {
+            constructor() {
+                this.x = cw / 2;
+                this.y = ch / 2;
+                this.radius = 15;
+                this.color = '#38bdf8'; // Sky 400
+                
+                // Base Stats
+                this.speed = 180; // pixels per sec
+                this.maxHp = 100;
+                this.hp = this.maxHp;
+                
+                // Combat Stats
+                this.damage = 25;
+                this.fireRate = 0.5; // Seconds between shots
+                this.fireTimer = 0;
+                this.bulletSpeed = 400;
+                
+                // Progression
+                this.xp = 0;
+                this.level = 1;
+                this.xpToNext = 100;
+            }
+
+            update(dt) {
+                // Movement (Move towards targetPos)
+                const dx = targetPos.x - this.x;
+                const dy = targetPos.y - this.y;
+                const dist = Math.hypot(dx, dy);
+                
+                if (dist > 5) {
+                    const moveX = (dx / dist) * this.speed * dt;
+                    const moveY = (dy / dist) * this.speed * dt;
+                    this.x += moveX;
+                    this.y += moveY;
+                }
+
+                // Keep in bounds
+                this.x = Math.max(this.radius, Math.min(cw - this.radius, this.x));
+                this.y = Math.max(this.radius, Math.min(ch - this.radius, this.y));
+
+                // Auto Shooting
+                this.fireTimer -= dt;
+                if (this.fireTimer <= 0) {
+                    this.shoot();
+                }
+            }
+
+            shoot() {
+                if (enemies.length === 0) return;
+
+                // Find closest enemy
+                let closest = null;
+                let minDist = Infinity;
+                
+                for (let e of enemies) {
+                    const dist = Math.hypot(e.x - this.x, e.y - this.y);
+                    if (dist < minDist) {
+                        minDist = dist;
+                        closest = e;
+                    }
+                }
+
+                if (closest) {
+                    const dx = closest.x - this.x;
+                    const dy = closest.y - this.y;
+                    const angle = Math.atan2(dy, dx);
+                    
+                    bullets.push(new Bullet(this.x, this.y, angle, this.damage, this.bulletSpeed));
+                    this.fireTimer = this.fireRate;
+                    
+                    // Simple recoil effect
+                    this.x -= Math.cos(angle) * 3;
+                    this.y -= Math.sin(angle) * 3;
+                }
+            }
+
+            draw(ctx) {
+                // Glow
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = this.color;
+                
+                // Body
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                
+                // Core
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius * 0.5, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.fill();
+                
+                ctx.shadowBlur = 0;
+            }
+
+            takeDamage(amount) {
+                this.hp -= amount;
+                updateHUD();
+                
+                // Hit flash particle
+                createParticles(this.x, this.y, this.color, 5);
+
+                if (this.hp <= 0) {
+                    gameOver();
+                }
+            }
+
+            addXp(amount) {
+                this.xp += amount;
+                if (this.xp >= this.xpToNext) {
+                    this.xp -= this.xpToNext;
+                    this.level++;
+                    this.xpToNext = Math.floor(this.xpToNext * 1.5);
+                    triggerLevelUp();
+                }
+                updateHUD();
+            }
+        }
+
+        class Enemy {
+            constructor() {
+                // Spawn outside screen
+                const side = Math.floor(Math.random() * 4);
+                if (side === 0) { this.x = Math.random() * cw; this.y = -30; } // Top
+                else if (side === 1) { this.x = cw + 30; this.y = Math.random() * ch; } // Right
+                else if (side === 2) { this.x = Math.random() * cw; this.y = ch + 30; } // Bottom
+                else { this.x = -30; this.y = Math.random() * ch; } // Left
+
+                this.radius = 12 + Math.random() * 6;
+                
+                // Scale difficulty over time
+                const timeScale = 1 + (survivalTime / 60);
+                
+                this.speed = (50 + Math.random() * 40) * (timeScale * 0.8);
+                this.hp = 30 * timeScale;
+                this.damage = 10;
+                this.color = '#ef4444'; // Red 500
+            }
+
+            update(dt) {
+                // Move towards player
+                const dx = player.x - this.x;
+                const dy = player.y - this.y;
+                const dist = Math.hypot(dx, dy);
+                
+                if (dist > 0) {
+                    this.x += (dx / dist) * this.speed * dt;
+                    this.y += (dy / dist) * this.speed * dt;
+                }
+
+                // Collision with player
+                if (dist < this.radius + player.radius) {
+                    player.takeDamage(this.damage);
+                    this.hp = 0; // Destroy self on impact
+                }
+            }
+
+            draw(ctx) {
+                ctx.beginPath();
+                ctx.rect(this.x - this.radius, this.y - this.radius, this.radius * 2, this.radius * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.strokeStyle = '#7f1d1d';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+        }
+
+        class Bullet {
+            constructor(x, y, angle, damage, speed) {
+                this.x = x;
+                this.y = y;
+                this.vx = Math.cos(angle) * speed;
+                this.vy = Math.sin(angle) * speed;
+                this.damage = damage;
+                this.radius = 4;
+                this.color = '#fde047'; // Yellow 300
+                this.life = 2; // seconds
+            }
+
+            update(dt) {
+                this.x += this.vx * dt;
+                this.y += this.vy * dt;
+                this.life -= dt;
+            }
+
+            draw(ctx) {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                
+                // Trail
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y);
+                ctx.lineTo(this.x - this.vx * 0.05, this.y - this.vy * 0.05);
+                ctx.strokeStyle = this.color;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+        }
+
+        class Gem {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.radius = 6;
+                this.color = '#4ade80'; // Green 400
+                this.xpValue = 35;
+                this.magnetSpeed = 0;
+            }
+
+            update(dt) {
+                // Magnet radius
+                const dist = Math.hypot(player.x - this.x, player.y - this.y);
+                if (dist < 100) {
+                    this.magnetSpeed += 500 * dt;
+                    this.x += ((player.x - this.x) / dist) * this.magnetSpeed * dt;
+                    this.y += ((player.y - this.y) / dist) * this.magnetSpeed * dt;
+                }
+
+                // Collection
+                if (dist < player.radius + this.radius) {
+                    player.addXp(this.xpValue);
+                    this.collected = true;
+                    // Collection pop
+                    floatingTexts.push(new FloatingText(this.x, this.y, `+${this.xpValue}`, this.color));
+                }
+            }
+
+            draw(ctx) {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(survivalTime * 2); // Spin effect
+                ctx.beginPath();
+                ctx.moveTo(0, -this.radius);
+                ctx.lineTo(this.radius, 0);
+                ctx.lineTo(0, this.radius);
+                ctx.lineTo(-this.radius, 0);
+                ctx.closePath();
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 50 + Math.random() * 100;
+                this.vx = Math.cos(angle) * speed;
+                this.vy = Math.sin(angle) * speed;
+                this.life = 0.3 + Math.random() * 0.3;
+                this.maxLife = this.life;
+                this.color = color;
+                this.size = 2 + Math.random() * 3;
+            }
+            update(dt) {
+                this.x += this.vx * dt;
+                this.y += this.vy * dt;
+                this.life -= dt;
+                this.size = Math.max(0, this.size - dt * 5);
+            }
+            draw(ctx) {
+                ctx.globalAlpha = this.life / this.maxLife;
+                ctx.beginPath();
+                ctx.rect(this.x, this.y, this.size, this.size);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        class FloatingText {
+            constructor(x, y, text, color) {
+                this.x = x;
+                this.y = y;
+                this.text = text;
+                this.color = color || '#ffffff';
+                this.life = 0.6;
+                this.maxLife = this.life;
+                this.vy = -30;
+            }
+            update(dt) {
+                this.y += this.vy * dt;
+                this.life -= dt;
+            }
+            draw(ctx) {
+                ctx.globalAlpha = this.life / this.maxLife;
+                ctx.fillStyle = this.color;
+                ctx.font = 'bold 14px Inter';
+                ctx.textAlign = 'center';
+                ctx.fillText(this.text, this.x, this.y);
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        let player;
+        let enemySpawnTimer = 0;
+        let enemySpawnRate = 1.0; // Seconds between spawns
+
+        function createParticles(x, y, color, count) {
+            for(let i=0; i<count; i++) {
+                particles.push(new Particle(x, y, color));
+            }
+        }
+
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+            const s = Math.floor(seconds % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
+        function updateHUD() {
+            if(!player) return;
+            hpFill.style.width = `${Math.max(0, (player.hp / player.maxHp) * 100)}%`;
+            xpFill.style.width = `${Math.min(100, (player.xp / player.xpToNext) * 100)}%`;
+            levelText.innerText = `LVL ${player.level}`;
+            timeText.innerText = formatTime(survivalTime);
+        }
+
+        function triggerLevelUp() {
+            gameState = 'LEVELUP';
+            uiLevelUp.classList.remove('hidden');
+        }
+
+        function resumeGame() {
+            gameState = 'PLAYING';
+            uiLevelUp.classList.add('hidden');
+            lastTime = performance.now(); // Prevent large delta time jump
+        }
+
+        function gameOver() {
+            gameState = 'GAMEOVER';
+            uiGameOver.classList.remove('hidden');
+            document.getElementById('survival-time').innerText = `Survived: ${formatTime(survivalTime)}`;
+        }
+
+        function startGame() {
+            player = new Player();
+            enemies = [];
+            bullets = [];
+            gems = [];
+            particles = [];
+            floatingTexts = [];
+            survivalTime = 0;
+            enemySpawnRate = 1.0;
+            targetPos.x = cw/2;
+            targetPos.y = ch/2;
+            
+            uiStart.classList.add('hidden');
+            uiGameOver.classList.add('hidden');
+            gameState = 'PLAYING';
+            lastTime = performance.now();
+            updateHUD();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Button Listeners
+        btnStart.addEventListener('click', startGame);
+        btnRestart.addEventListener('click', startGame);
+
+        // Upgrade Listeners
+        btnUpgDmg.addEventListener('click', () => {
+            player.damage *= 1.25;
+            resumeGame();
+        });
+        btnUpgSpd.addEventListener('click', () => {
+            player.fireRate *= 0.8; // Decrease delay between shots
+            resumeGame();
+        });
+        btnUpgMov.addEventListener('click', () => {
+            player.speed *= 1.15;
+            resumeGame();
+        });
+
+        // Background Grid Render
+        function drawGrid() {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+            ctx.lineWidth = 1;
+            const gridSize = 40;
+            
+            // Offset grid based on player position to create parallax/camera effect illusion
+            const offsetX = -(player.x % gridSize);
+            const offsetY = -(player.y % gridSize);
+
+            ctx.beginPath();
+            for (let x = offsetX; x < cw; x += gridSize) {
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, ch);
+            }
+            for (let y = offsetY; y < ch; y += gridSize) {
+                ctx.moveTo(0, y);
+                ctx.lineTo(cw, y);
+            }
+            ctx.stroke();
+        }
+
+        // Main Loop
+        function gameLoop(timestamp) {
+            if (gameState !== 'PLAYING') return;
+
+            const dt = Math.min((timestamp - lastTime) / 1000, 0.1); // Cap dt to avoid huge jumps
+            lastTime = timestamp;
+            survivalTime += dt;
+
+            // Clear Screen
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(0, 0, cw, ch);
+
+            drawGrid();
+
+            // Spawn Logic
+            enemySpawnTimer -= dt;
+            if (enemySpawnTimer <= 0) {
+                enemies.push(new Enemy());
+                // Spawn rate increases over time (cap at 0.1s)
+                enemySpawnRate = Math.max(0.1, 1.0 - (survivalTime / 120)); 
+                enemySpawnTimer = enemySpawnRate;
+            }
+
+            // Update & Draw Player
+            player.update(dt);
+            player.draw(ctx);
+
+            // Update & Draw Bullets
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                let b = bullets[i];
+                b.update(dt);
+                b.draw(ctx);
+                
+                // Remove dead bullets
+                if (b.life <= 0 || b.x < 0 || b.x > cw || b.y < 0 || b.y > ch) {
+                    bullets.splice(i, 1);
+                    continue;
+                }
+
+                // Check collisions with enemies
+                for (let j = enemies.length - 1; j >= 0; j--) {
+                    let e = enemies[j];
+                    const dist = Math.hypot(b.x - e.x, b.y - e.y);
+                    if (dist < b.radius + e.radius) {
+                        e.hp -= b.damage;
+                        bullets.splice(i, 1);
+                        createParticles(b.x, b.y, b.color, 3);
+                        floatingTexts.push(new FloatingText(e.x, e.y, Math.floor(b.damage), '#fca5a5'));
+                        
+                        if (e.hp <= 0) {
+                            createParticles(e.x, e.y, e.color, 8);
+                            // 50% chance to drop gem
+                            if(Math.random() > 0.5) {
+                                gems.push(new Gem(e.x, e.y));
+                            }
+                            enemies.splice(j, 1);
+                        }
+                        break; // Bullet destroyed, stop checking enemies
+                    }
+                }
+            }
+
+            // Update & Draw Enemies
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                let e = enemies[i];
+                e.update(dt);
+                if (e.hp > 0) e.draw(ctx);
+                else enemies.splice(i, 1); // Remove if died via player collision
+            }
+
+            // Update & Draw Gems
+            for (let i = gems.length - 1; i >= 0; i--) {
+                let g = gems[i];
+                g.update(dt);
+                if (g.collected) {
+                    gems.splice(i, 1);
+                } else {
+                    g.draw(ctx);
+                }
+            }
+
+            // Update & Draw Particles & Text
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.update(dt);
+                if (p.life > 0) p.draw(ctx);
+                else particles.splice(i, 1);
+            }
+            
+            for (let i = floatingTexts.length - 1; i >= 0; i--) {
+                let ft = floatingTexts[i];
+                ft.update(dt);
+                if (ft.life > 0) ft.draw(ctx);
+                else floatingTexts.splice(i, 1);
+            }
+
+            // HUD UI Update (Once per second to save performance)
+            if (Math.floor(survivalTime) > Math.floor(survivalTime - dt)) {
+                updateHUD();
+            }
+
+            if (gameState === 'PLAYING') {
+                requestAnimationFrame(gameLoop);
+            }
+        }
+    </script>
+</body>
+</html>

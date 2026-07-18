@@ -1,0 +1,408 @@
+@import "tailwindcss";
+
+/* =========================================================
+   GLOBAL RESET & BASE
+   ========================================================= */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  overflow: hidden;
+  background-color: #0a0f1e;
+  font-family: 'Inter', sans-serif;
+  touch-action: none;
+  color: white;
+  user-select: none;
+}
+
+canvas#game-canvas {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  position: fixed;
+  top: 0; left: 0;
+}
+
+/* =========================================================
+   OVERLAY BASE
+   ========================================================= */
+#ui-layer { position: fixed; inset: 0; pointer-events: none; z-index: 10; }
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 15, 30, 0.88);
+  backdrop-filter: blur(12px);
+  z-index: 50;
+  pointer-events: all;
+}
+
+.hidden { display: none !important; }
+
+/* =========================================================
+   BUTTONS
+   ========================================================= */
+.btn {
+  padding: 14px 36px;
+  border-radius: 9999px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  font-size: 1.2rem;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  border: none;
+  transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+}
+.btn:hover  { transform: translateY(-3px); }
+.btn:active { transform: scale(0.96); }
+
+.btn-primary {
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  color: white;
+  box-shadow: 0 0 20px rgba(99,102,241,0.5);
+}
+.btn-primary:hover { box-shadow: 0 0 32px rgba(99,102,241,0.8); }
+
+.btn-secondary {
+  background: transparent;
+  border: 2px solid #475569;
+  color: #94a3b8;
+}
+.btn-secondary:hover { border-color: #f59e0b; color: #f59e0b; }
+
+.btn-maxed  { background: #1e293b; color: #64748b; cursor: not-allowed; border: 1px solid #334155; }
+.btn-buy    { background: linear-gradient(135deg, #f59e0b, #ef4444); color: white; font-weight: 700; cursor: pointer; }
+.btn-locked { background: #1e293b; color: #475569; cursor: not-allowed; border: 1px solid #1e293b; }
+
+@keyframes pulse { 0%,100% { box-shadow: 0 0 16px rgba(99,102,241,0.5); } 50% { box-shadow: 0 0 40px rgba(99,102,241,0.9); } }
+.pulse-anim { animation: pulse 2s ease-in-out infinite; }
+
+/* =========================================================
+   HUD
+   ========================================================= */
+#hud {
+  position: absolute;
+  top: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 420px;
+  padding: 16px 20px 0;
+  pointer-events: none;
+  z-index: 20;
+}
+#hud-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+#hud-stats { flex: 1; }
+.hud-label { font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 0.85rem; color: #94a3b8; letter-spacing: 0.1em; }
+.bar-wrap { margin-top: 5px; }
+.bar-track {
+  position: relative;
+  background: rgba(0,0,0,0.5);
+  border: 1px solid #334155;
+  border-radius: 999px;
+  overflow: hidden;
+  height: 20px;
+}
+.hp-track { height: 13px; margin-top: 4px; }
+.bar-fill { height: 100%; transition: width 0.2s ease-out; border-radius: 999px; }
+.xp-bar { background: linear-gradient(90deg, #3b82f6, #818cf8); }
+.hp-bar { background: linear-gradient(90deg, #ef4444, #f97316); }
+.bar-label { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 700; color: rgba(255,255,255,0.8); }
+
+.hud-time { font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 1.5rem; color: #e2e8f0; letter-spacing: 0.05em; white-space: nowrap; }
+
+#credits-hud { margin-top: 6px; font-size: 0.75rem; color: #f59e0b; font-weight: 600; }
+
+.apex-meter-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+.apex-meter-track {
+  flex: 1;
+  background: rgba(0,0,0,0.5);
+  border: 1px solid #f59e0b;
+  border-radius: 999px;
+  height: 16px;
+  overflow: hidden;
+  position: relative;
+}
+.apex-meter-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #f97316, #ef4444);
+  transition: width 0.2s linear;
+}
+.apex-btn {
+  pointer-events: auto;
+  padding: 4px 12px;
+  border-radius: 4px;
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
+  color: white;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 800;
+  font-size: 1.1rem;
+  border: 1px solid #fff;
+  cursor: pointer;
+  box-shadow: 0 0 15px rgba(239,68,68,0.8);
+  animation: apexPulse 0.8s alternate infinite;
+}
+@keyframes apexPulse { 
+    from { transform: scale(1); box-shadow: 0 0 10px rgba(239,68,68,0.6); } 
+    to { transform: scale(1.1); box-shadow: 0 0 25px rgba(251,191,36,1); } 
+}
+.apex-btn.hidden { display: none; }
+
+/* =========================================================
+   APEX MODE BANNER
+   ========================================================= */
+#apex-banner {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 100;
+  pointer-events: none;
+  animation: apexSlideIn 0.4s ease-out;
+}
+@keyframes apexSlideIn { from { transform: translateY(-100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.apex-banner-text {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: #fbbf24;
+  text-shadow: 0 0 20px #f97316, 0 0 40px #ef4444;
+  padding: 8px 20px;
+  background: rgba(239,68,68,0.15);
+  border-bottom: 2px solid rgba(239,68,68,0.4);
+  width: 100%;
+  text-align: center;
+}
+#apex-timer-bar-wrap { width: 100%; height: 4px; background: rgba(0,0,0,0.5); }
+#apex-timer-bar { height: 4px; background: linear-gradient(90deg, #f97316, #ef4444); transition: width 0.1s linear; }
+
+/* =========================================================
+   MAIN MENU
+   ========================================================= */
+.menu-bg-glow {
+  position: absolute;
+  width: 500px; height: 500px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(59,130,246,0.15), transparent 70%);
+  animation: bgPulse 4s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes bgPulse { 0%,100% { transform: scale(1); opacity: 0.6; } 50% { transform: scale(1.2); opacity: 1; } }
+
+.game-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: clamp(3.5rem, 14vw, 6rem);
+  font-weight: 700;
+  text-align: center;
+  line-height: 0.9;
+  letter-spacing: 0.05em;
+  background: linear-gradient(135deg, #38bdf8, #818cf8, #f472b6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: none;
+  margin-bottom: 12px;
+  position: relative;
+}
+
+.game-tagline {
+  font-size: 0.9rem;
+  color: #64748b;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-bottom: 40px;
+  position: relative;
+}
+
+.menu-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  max-width: 280px;
+  position: relative;
+}
+
+.menu-hint { margin-top: 28px; font-size: 0.72rem; color: #475569; text-align: center; max-width: 260px; position: relative; }
+
+/* =========================================================
+   LEVEL UP SCREEN
+   ========================================================= */
+.lu-glow {
+  position: absolute;
+  width: 400px; height: 400px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(250,204,21,0.12), transparent 70%);
+  pointer-events: none;
+}
+.lu-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: clamp(2.5rem, 10vw, 4rem);
+  font-weight: 700;
+  color: #fbbf24;
+  text-shadow: 0 0 20px rgba(251,191,36,0.7);
+  letter-spacing: 0.08em;
+  position: relative;
+  margin-bottom: 4px;
+}
+.lu-subtitle { color: #94a3b8; font-size: 0.85rem; margin-bottom: 28px; position: relative; }
+.levelup-grid {
+  display: flex;
+  flex-direction: row;
+  gap: 14px;
+  padding: 0 16px;
+  width: 100%;
+  max-width: 640px;
+  position: relative;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.levelup-card {
+  flex: 1;
+  min-width: 140px;
+  max-width: 200px;
+  background: linear-gradient(160deg, #1e293b 0%, #0f172a 100%);
+  border: 1px solid #334155;
+  border-radius: 16px;
+  padding: 20px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+.levelup-card:hover {
+  border-color: #fbbf24;
+  transform: translateY(-6px);
+  box-shadow: 0 8px 30px rgba(251,191,36,0.2);
+}
+.lu-icon { font-size: 2.2rem; }
+.lu-name { font-family: 'Rajdhani', sans-serif; font-size: 1rem; font-weight: 700; color: white; text-align: center; }
+.lu-desc { font-size: 0.72rem; color: #94a3b8; text-align: center; line-height: 1.4; }
+
+/* =========================================================
+   POWER UPGRADES SHOP
+   ========================================================= */
+.overlay-panel {
+  width: 100%;
+  max-width: 520px;
+  height: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 16px;
+  overflow: hidden;
+}
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.panel-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.6rem;
+  font-weight: 700;
+  background: linear-gradient(90deg, #f59e0b, #ef4444);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: 0.06em;
+}
+.credits-display {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #f59e0b;
+}
+.upgrade-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  overflow-y: auto;
+  padding-right: 4px;
+  flex: 1;
+}
+.upgrade-grid::-webkit-scrollbar { width: 4px; }
+.upgrade-grid::-webkit-scrollbar-track { background: transparent; }
+.upgrade-grid::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+
+.upg-card {
+  background: linear-gradient(160deg, #1e293b, #0f172a);
+  border-radius: 14px;
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #1e293b;
+  transition: border-color 0.2s;
+}
+.upg-card.affordable { border-color: #334155; }
+.upg-card.affordable:hover { border-color: #f59e0b; }
+.upg-card.maxed { border-color: #059669; background: linear-gradient(160deg, #064e3b22, #0f172a); }
+.upg-card.locked { opacity: 0.6; }
+
+.upg-icon { font-size: 1.8rem; }
+.upg-name { font-family: 'Rajdhani', sans-serif; font-size: 0.9rem; font-weight: 700; color: #e2e8f0; text-align: center; }
+.upg-desc { font-size: 0.65rem; color: #64748b; text-align: center; line-height: 1.3; }
+.upg-progress { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.upg-pips { display: flex; gap: 3px; flex-wrap: wrap; justify-content: center; }
+.pip { width: 9px; height: 5px; border-radius: 2px; background: #1e293b; border: 1px solid #334155; }
+.pip.filled { background: #f59e0b; border-color: #f59e0b; }
+.upg-level { font-size: 0.6rem; color: #475569; }
+
+.upg-btn {
+  margin-top: 4px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border: none;
+  transition: transform 0.15s;
+  width: 100%;
+}
+.btn-buy:hover { transform: scale(1.04); }
+
+.close-btn {
+  background: transparent;
+  border: 1px solid #334155;
+  color: #64748b;
+  padding: 10px 24px;
+  border-radius: 9999px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  letter-spacing: 0.05em;
+  transition: border-color 0.2s, color 0.2s;
+}
+.close-btn:hover { border-color: #94a3b8; color: #e2e8f0; }
+
+/* =========================================================
+   GAME OVER SCREEN
+   ========================================================= */
+.over-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: clamp(3rem, 14vw, 5.5rem);
+  font-weight: 700;
+  color: #ef4444;
+  text-shadow: 0 0 30px rgba(239,68,68,0.8);
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+}
+.over-time { font-size: 1.3rem; color: #94a3b8; margin-bottom: 4px; }
+.over-credits { font-size: 1rem; color: #f59e0b; font-weight: 600; margin-bottom: 28px; }
+.over-buttons { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 260px; }

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="description" content="Apex Swarm – A hyper-fast Bullet Heaven survival game. Survive endless swarms. Activate APEX MODE. Dominate." />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+  <title>Apex Swarm</title>
+</head>
+<body>
+
+  <!-- ===================== UI LAYER ===================== -->
+  <div id="ui-layer">
+
+    <!-- HUD (hidden until playing) -->
+    <div id="hud" class="hidden">
+      <div id="hud-top">
+        <div id="hud-stats">
+          <span id="level-text" class="hud-label">LVL 1</span>
+          <div class="bar-wrap">
+            <div class="bar-track">
+              <div id="xp-fill" class="bar-fill xp-bar"></div>
+              <span class="bar-label">XP</span>
+            </div>
+          </div>
+          <div class="bar-wrap">
+            <div class="bar-track hp-track">
+              <div id="hp-fill" class="bar-fill hp-bar" style="width:100%"></div>
+            </div>
+          </div>
+          <div class="apex-meter-container">
+            <div class="apex-meter-track">
+              <div id="apex-meter-fill" class="apex-meter-fill"></div>
+            </div>
+            <button id="apex-trigger-btn" class="apex-btn hidden">APEX</button>
+          </div>
+        </div>
+
+        <span id="time-text" class="hud-time">00:00</span>
+      </div>
+      <div id="credits-hud">💰 <span id="hud-credits">0</span></div>
+    </div>
+
+    <!-- APEX MODE Banner -->
+    <div id="apex-banner" class="hidden">
+      <span class="apex-banner-text">🔥 APEX MODE 🔥</span>
+      <div id="apex-timer-bar-wrap"><div id="apex-timer-bar"></div></div>
+    </div>
+
+    <!-- ============ MAIN MENU ============ -->
+    <div id="main-menu" class="overlay">
+      <div class="menu-bg-glow"></div>
+      <h1 class="game-title">APEX<br>SWARM</h1>
+      <p class="game-tagline">You are the swarm.</p>
+      <div class="menu-buttons">
+        <button id="start-btn" class="btn btn-primary pulse-anim">▶ START RUN</button>
+        <button id="power-upgrades-btn" class="btn btn-secondary">⚡ POWER UPGRADES</button>
+      </div>
+      <p class="menu-hint">Move with Mouse or Touch · Auto-Attack · Survive!</p>
+    </div>
+
+    <!-- ============ LEVEL UP ============ -->
+    <div id="levelup-screen" class="overlay hidden">
+      <div class="lu-glow"></div>
+      <h2 class="lu-title">LEVEL UP!</h2>
+      <p class="lu-subtitle">Choose your upgrade</p>
+      <div id="levelup-grid" class="levelup-grid"></div>
+      <div style="margin-top: 24px; display: flex; gap: 16px; position: relative;">
+        <button id="reroll-btn" class="btn btn-secondary">REROLL (0)</button>
+        <button id="banish-btn" class="btn btn-secondary" style="border-color: #ef4444; color: #ef4444;">BANISH (0)</button>
+      </div>
+    </div>
+
+    <!-- ============ POWER UPGRADES SHOP ============ -->
+    <div id="power-upgrades-screen" class="overlay hidden">
+      <!-- Filled dynamically by PowerUpgradesUI -->
+    </div>
+
+    <!-- ============ GAME OVER ============ -->
+    <div id="gameover-screen" class="overlay hidden">
+      <h2 class="over-title">YOU DIED</h2>
+      <p id="survival-time" class="over-time">Survived: 00:00</p>
+      <p id="credits-earned" class="over-credits">+0 Credits Earned</p>
+      <div id="run-stats" class="run-stats-container" style="text-align: left; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 0.9em; max-height: 250px; overflow-y: auto;">
+        <!-- Filled dynamically by UIManager -->
+      </div>
+      <div class="over-buttons">
+        <button id="restart-btn" class="btn btn-primary">↺ TRY AGAIN</button>
+        <button id="go-upgrades-btn" class="btn btn-secondary">⚡ UPGRADES</button>
+      </div>
+    </div>
+
+  </div>
+
+  <canvas id="game-canvas"></canvas>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
