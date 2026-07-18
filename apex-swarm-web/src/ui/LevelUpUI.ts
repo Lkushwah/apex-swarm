@@ -8,7 +8,7 @@ export class LevelUpUI {
     private grid = document.getElementById('levelup-grid')!;
     private rerollBtn = document.getElementById('reroll-btn')! as HTMLButtonElement;
     private banishBtn = document.getElementById('banish-btn')! as HTMLButtonElement;
-    private onPick: () => void;
+    private onPick: (selection?: { type: string, id: string, level: number }) => void;
 
     // Reroll/Banish state
     private banishedIds: Set<string> = new Set();
@@ -17,7 +17,7 @@ export class LevelUpUI {
     private currentPlayer: Player | null = null;
     private isBanishMode: boolean = false;
 
-    constructor(onPick: () => void) {
+    constructor(onPick: (selection?: { type: string, id: string, level: number }) => void) {
         this.onPick = onPick;
 
         this.rerollBtn.addEventListener('click', () => {
@@ -105,7 +105,7 @@ export class LevelUpUI {
                 EvolutionSystem.checkEvolutions(player);
                 
                 this.hide();
-                this.onPick();
+                this.onPick({ type: isWeapon ? 'WEAPON_ACQUIRED' : 'PASSIVE_ACQUIRED', id: data.id, level: nextLvl });
             });
             this.grid.appendChild(card);
         });

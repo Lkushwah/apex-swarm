@@ -10,6 +10,7 @@ export interface SaveData {
     equippedCosmetic: string | null;
     dailyStreak: number;
     lastLoginDate: string | null;
+    displayName: string | null;
 }
 
 const SAVE_KEY = 'apex_swarm_save';
@@ -21,7 +22,8 @@ const DEFAULT_SAVE: SaveData = {
     unlockedCosmetics: ['default'],
     equippedCosmetic: 'default',
     dailyStreak: 0,
-    lastLoginDate: null
+    lastLoginDate: null,
+    displayName: null
 };
 
 export class SaveManager {
@@ -44,8 +46,21 @@ export class SaveManager {
         return { ...DEFAULT_SAVE, upgrades: {} };
     }
 
-    private save() {
+    public save() {
         localStorage.setItem(SAVE_KEY, JSON.stringify(this.data));
+    }
+
+    public getDisplayName(): string | null {
+        return this.data.displayName;
+    }
+
+    public setDisplayName(name: string) {
+        this.data.displayName = name;
+        this.save();
+    }
+
+    public getRawData(): SaveData {
+        return this.data;
     }
 
     public getCredits(): number {
@@ -80,8 +95,10 @@ export class SaveManager {
         this.save();
     }
 
-    public hasCosmetic(id: string): boolean {
-        return this.data.unlockedCosmetics?.includes(id) ?? false;
+    public hasCosmetic(_id: string): boolean {
+        // ALWAYS TRUE FOR TESTING
+        return true;
+        // return this.data.unlockedCosmetics?.includes(id) ?? false;
     }
 
     public unlockCosmetic(id: string) {

@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import { Drone } from './Drone';
 import { Player } from './Player';
 import { Enemy } from './Enemy';
-import { HiveMindLaser } from './Projectiles';
 
 describe('Drone', () => {
     it('should orbit the player', () => {
@@ -16,7 +15,7 @@ describe('Drone', () => {
         const initialX = drone.x;
         const initialY = drone.y;
 
-        drone.update(0.1, [], [], null, 10);
+        drone.update(0.1, [], [], 10);
 
         // Should have moved along orbit
         expect(drone.x).not.toBe(initialX);
@@ -29,7 +28,7 @@ describe('Drone', () => {
         const enemy = new Enemy(150, 100, 1, 'swarmer');
         
         const projectiles: any[] = [];
-        drone.update(0.016, [enemy], projectiles, null, 10);
+        drone.update(0.016, [enemy], projectiles, 10);
 
         // It should have fired a projectile
         expect(projectiles.length).toBeGreaterThan(0);
@@ -43,21 +42,21 @@ describe('Drone', () => {
         
         const distToEnemy = Math.hypot(drone.x - enemy.x, drone.y - enemy.y);
         
-        drone.update(0.016, [enemy], [], null, 10); // Find target
-        drone.update(0.016, [enemy], [], null, 10); // Move towards target
+        drone.update(0.016, [], [], 10); // Find target
+        drone.update(0.016, [enemy], [], 10); // Move towards target
         
         const distToEnemyAfter = Math.hypot(drone.x - enemy.x, drone.y - enemy.y);
         
         expect(distToEnemyAfter).toBeLessThan(distToEnemy);
     });
 
-    it('should fire HiveMindLaser when evolved and locked on', () => {
+    it('should lock on to enemies when evolved', () => {
         const player = new Player(100, 100);
         const drone = new Drone(player, 0);
         drone.isEvolved = true;
         const enemy = new Enemy(150, 100, 1, 'swarmer');
 
-        drone.update(0.1, [enemy], [], null, 10);
+        drone.update(0.1, [enemy], [], 10);
         
         expect((drone as any).targetEnemy).toBe(enemy);
     });

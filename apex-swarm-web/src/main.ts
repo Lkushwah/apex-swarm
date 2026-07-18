@@ -19,7 +19,14 @@ import { LevelUpUI } from './ui/LevelUpUI';
 import { PowerUpgradesUI } from './ui/PowerUpgradesUI';
 import { CosmeticsUI, COSMETICS } from './ui/CosmeticsUI';
 import { DailyChallengeUI } from './ui/DailyChallengeUI';
+import { NamePromptUI } from './ui/NamePromptUI';
+import { LeaderboardUI } from './ui/LeaderboardUI';
+import { TutorialUI } from './ui/TutorialUI';
+import { TutorialManager } from './systems/TutorialManager';
 import { PRNG } from './core/PRNG';
+import { AnalyticsLogger } from './core/AnalyticsLogger';
+
+import { firebaseManager } from './core/FirebaseManager';
 
 import { SaveManager } from './core/SaveManager';
 import { PERM_UPGRADES } from './data/upgrades';
@@ -35,9 +42,11 @@ inputManager.onDoubleTap(() => {
 });
 const saveManager = new SaveManager();
 const uiManager = new UIManager();
+const tutorialUI = new TutorialUI();
+const tutorialManager = new TutorialManager(tutorialUI);
 
 // ---- Game State ----
-type GameState = 'MENU' | 'PLAYING' | 'LEVELUP' | 'GAMEOVER';
+type GameState = 'MENU' | 'PLAYING' | 'LEVELUP' | 'GAMEOVER' | 'TUTORIAL';
 let gameState: GameState = 'MENU';
 
 let player: Player;
@@ -55,13 +64,42 @@ let survivalTime: number = 0;
 let weaponSystem: WeaponSystem;
 let waveManager: WaveManager;
 let apexSystem: ApexSystem;
+let analyticsLogger: AnalyticsLogger;
 
 // ---- Sub-UIs ----
 const powerUpgradesUI = new PowerUpgradesUI(saveManager, () => uiManager.showMainMenu());
 const cosmeticsUI = new CosmeticsUI(saveManager, undefined, () => uiManager.showMainMenu());
 const dailyChallengeUI = new DailyChallengeUI(saveManager, (seed, mods) => startDailyRun(seed, mods), () => uiManager.showMainMenu());
-const levelUpUI = new LevelUpUI(() => {
+const leaderboardUI = new LeaderboardUI();
+leaderboardUI.onBack = () => uiManager.showMainMenu();
+
+const namePromptUI = new NamePromptUI(saveManager);
+let namePromptTarget: 'START_GAME' | 'LEADERBOARD' | null = null;
+
+namePromptUI.onNameSet = () => {
+    if (namePromptTarget === 'START_GAME') {
+        startGame();
+    } else if (namePromptTarget === 'LEADERBOARD') {
+        leaderboardUI.show();
+    } else {
+        uiManager.showMainMenu();
+    }
+};
+
+namePromptUI.onSkip = () => {
+    if (namePromptTarget === 'START_GAME') {
+        startGame();
+    } else {
+        uiManager.showMainMenu();
+    }
+};
+
+const levelUpUI = new LevelUpUI((selection) => {
     gameState = 'PLAYING';
+    if (selection && analyticsLogger) {
+        analyticsLogger.logEvent(selection.type as any, { id: selection.id, level: selection.level }, survivalTime);
+    }
+    checkTutorials();
 });
 
 // ---- Permanent Upgrades Application ----
@@ -76,6 +114,34 @@ function applyPermanentUpgrades(p: Player) {
     // Store credit multiplier on player for the run
     const creditLevel = saveManager.getUpgradeLevel('perm_credits');
     p.creditMultiplier = 1 + creditLevel * 0.1;
+}
+
+function checkTutorials() {
+    if (gameState !== 'PLAYING') return;
+
+    if (apexSystem && apexSystem.canTrigger() && !tutorialManager.hasSeen('APEX_METER')) {
+        gameState = 'TUTORIAL';
+        tutorialManager.showTutorial('APEX_METER', () => {
+            gameState = 'PLAYING';
+        });
+        return;
+    }
+
+    if (player && player.weapons.some(w => w.evolved) && !tutorialManager.hasSeen('WEAPON_EVOLUTION')) {
+        gameState = 'TUTORIAL';
+        tutorialManager.showTutorial('WEAPON_EVOLUTION', () => {
+            gameState = 'PLAYING';
+        });
+        return;
+    }
+
+    if (weaponSystem && weaponSystem.drones && weaponSystem.drones.length > 0 && !tutorialManager.hasSeen('DRONES')) {
+        gameState = 'TUTORIAL';
+        tutorialManager.showTutorial('DRONES', () => {
+            gameState = 'PLAYING';
+        });
+        return;
+    }
 }
 
 // ---- Start/Restart Game ----
@@ -102,6 +168,8 @@ function startGame() {
     weaponSystem = new WeaponSystem(player);
     waveManager = new WaveManager(bounds);
     apexSystem = new ApexSystem(player);
+    analyticsLogger = new AnalyticsLogger();
+    analyticsLogger.logEvent('GAME_START', {}, 0);
 
     // Apply Apex perm upgrades to apex system
     const apexPowerLevel = saveManager.getUpgradeLevel('perm_apex_power');
@@ -128,6 +196,7 @@ function startGame() {
 
     gameState = 'PLAYING';
     uiManager.showHUD();
+    checkTutorials();
 }
 
 function startDailyRun(seed: number, modifiers: string[]) {
@@ -162,11 +231,43 @@ function handleGameOver() {
     if ((saveManager as any).addCores) {
         (saveManager as any).addCores(coresEarnedThisRun);
     }
-    uiManager.showGameOver(survivalTime, totalKills, player.weapons, player.passives, creditsEarnedThisRun, coresEarnedThisRun);
+    
+    const displayName = saveManager.getDisplayName();
+    
+    // Sync high scores to Firebase
+    if (displayName) {
+        firebaseManager.syncData(displayName, saveManager.getRawData(), survivalTime, totalKills);
+    }
+    
+    // Log run analytics to Firebase
+    const runLog = analyticsLogger.getRunLog();
+    analyticsLogger.logEvent('GAME_OVER', { finalLevel: player.level, finalKills: totalKills }, survivalTime);
+    
+    firebaseManager.saveRunLog({
+        displayName: displayName || 'Anonymous',
+        survivalTime: survivalTime,
+        totalKills: totalKills,
+        level: player.level,
+        weapons: player.weapons.map(w => ({ id: w.id, level: w.level, evolved: w.evolved })),
+        passives: player.passives.map(p => ({ id: p.id, level: p.level })),
+        events: runLog.events,
+        statsTimeline: runLog.statsTimeline
+    });
+
+    uiManager.showGameOver(survivalTime, totalKills, player.level, player.weapons, player.passives, creditsEarnedThisRun, coresEarnedThisRun);
 }
 
 // ---- Button Wiring ----
-document.getElementById('start-btn')!.addEventListener('click', startGame);
+document.getElementById('start-btn')!.addEventListener('click', () => {
+    const name = saveManager.getDisplayName();
+    if (!name) {
+        document.getElementById('main-menu')?.classList.add('hidden');
+        namePromptTarget = 'START_GAME';
+        namePromptUI.show();
+    } else {
+        startGame();
+    }
+});
 document.getElementById('restart-btn')!.addEventListener('click', startGame);
 document.getElementById('go-main-menu-btn')!.addEventListener('click', () => {
     gameState = 'MENU';
@@ -186,18 +287,34 @@ document.getElementById('daily-challenge-btn')!.addEventListener('click', () => 
     document.getElementById('main-menu')?.classList.add('hidden');
     dailyChallengeUI.show();
 });
+document.getElementById('leaderboards-btn')!.addEventListener('click', () => {
+    document.getElementById('main-menu')?.classList.add('hidden');
+    
+    // Check if user has a display name
+    const name = saveManager.getDisplayName();
+    if (!name) {
+        namePromptTarget = 'LEADERBOARD';
+        namePromptUI.show();
+    } else {
+        leaderboardUI.show();
+    }
+});
 document.getElementById('go-upgrades-btn')!.addEventListener('click', () => {
     document.getElementById('gameover-screen')?.classList.add('hidden');
     powerUpgradesUI.show();
 });
 document.getElementById('apex-trigger-btn')!.addEventListener('click', () => {
-    if (gameState === 'PLAYING') apexSystem.manualTrigger();
+    if (gameState === 'PLAYING') {
+        apexSystem.manualTrigger();
+        if (analyticsLogger) analyticsLogger.logEvent('APEX_TRIGGERED', { type: 'manual' }, survivalTime);
+    }
 });
 window.addEventListener('keydown', (e) => {
     if (gameState !== 'PLAYING') return;
     if (e.code === 'Space') {
         e.preventDefault();
         apexSystem.manualTrigger();
+        if (analyticsLogger) analyticsLogger.logEvent('APEX_TRIGGERED', { type: 'manual' }, survivalTime);
     } else if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
         e.preventDefault();
         player.dash(inputManager.getPointerPosition());
@@ -212,6 +329,7 @@ window.addEventListener('pointerup', (e) => {
     const now = performance.now();
     if (now - lastTapTime < 300) {
         apexSystem.manualTrigger();
+        if (analyticsLogger) analyticsLogger.logEvent('APEX_TRIGGERED', { type: 'manual' }, survivalTime);
     }
     lastTapTime = now;
 });
@@ -220,7 +338,7 @@ window.addEventListener('pointerup', (e) => {
 const gameLoop = new GameLoop(
     // UPDATE
     (dt) => {
-        if (gameState === 'MENU' || gameState === 'LEVELUP') return;
+        if (gameState === 'MENU' || gameState === 'LEVELUP' || gameState === 'TUTORIAL') return;
         if (gameState === 'GAMEOVER') return;
 
         inputManager.update();
@@ -254,9 +372,12 @@ const gameLoop = new GameLoop(
         weaponSystem.apexDamageBonus = effectiveDamageBonus;
         weaponSystem.update(scaledDt, enemies, projectiles);
 
+        checkTutorials();
+
         // Player
         const canTakeDamage = !apexSystem.isInvincible;
         player.update(scaledDt, inputManager.getPointerPosition(), bounds);
+        analyticsLogger.updateStats(survivalTime, player.x, player.y, player.hp, player.level, totalKills);
 
         // Projectiles
         for (let i = projectiles.length - 1; i >= 0; i--) {
@@ -311,6 +432,10 @@ const gameLoop = new GameLoop(
             apexSystem.addDamage(dmgTaken);
             // Hit flash
             createParticles(particles, player.x, player.y, '#ef4444', 4);
+            
+            if (dmgTaken >= 15) {
+                analyticsLogger.logEvent('HEAVY_DAMAGE_TAKEN', { amount: dmgTaken, hpLeft: player.hp }, survivalTime);
+            }
         }
         
         // Safety net: AFTER enemy processing, check if player died
@@ -318,7 +443,9 @@ const gameLoop = new GameLoop(
             if (apexSystem.canTrigger()) {
                 apexSystem.triggerSafetyNet();
                 player.hp = 1; // Survive with 1 HP, lifesteal will heal during Apex
+                if (analyticsLogger) analyticsLogger.logEvent('APEX_TRIGGERED', { type: 'safety_net' }, survivalTime);
             } else {
+                createParticles(particles, player.x, player.y, player.color, 30);
                 handleGameOver();
                 return;
             }
@@ -334,6 +461,7 @@ const gameLoop = new GameLoop(
                     floatingTexts.push(new FloatingText(c.x, c.y, `+${c.xpValue} XP`, '#4ade80', 0.5));
                     if (didLevel) {
                         gameState = 'LEVELUP';
+                        analyticsLogger.logEvent('LEVEL_UP', { newLevel: player.level }, survivalTime);
                         levelUpUI.show(player);
                     }
                 } else if (c.type === 'credit') {
@@ -389,7 +517,7 @@ const gameLoop = new GameLoop(
         weaponSystem.drones.forEach(d => d.draw(ctx));
 
         projectiles.forEach(p => p.draw(ctx));
-        if (player) player.draw(ctx, apexSystem?.getState());
+        if (player && gameState !== 'GAMEOVER') player.draw(ctx, apexSystem?.getState());
 
         // Particles and floating text on top
         particles.forEach(p => p.draw(ctx));

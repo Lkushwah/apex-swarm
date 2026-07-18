@@ -485,7 +485,6 @@ export class SingularityRing extends Projectile {
 }
 
 export class StormFrontPulse extends Projectile {
-    private maxRadius: number = 400;
     private hitSet: Set<Enemy> = new Set();
     
     constructor(player: Player, damage: number) {
@@ -560,7 +559,6 @@ export class StormFrontPulse extends Projectile {
 }
 
 export class RealityTearPulse extends Projectile {
-    private maxRadius: number = 200;
     private hitSet: Set<Enemy> = new Set();
     
     constructor(player: Player, damage: number) {

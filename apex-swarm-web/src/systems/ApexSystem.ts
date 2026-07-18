@@ -66,6 +66,7 @@ export class ApexSystem {
             this.state = 'TIMESLOW';
             this.timer = this.TIMESLOW_DURATION;
             this.currentTimeScale = 0.1;
+            this.isInvincible = true;
         }
     }
 

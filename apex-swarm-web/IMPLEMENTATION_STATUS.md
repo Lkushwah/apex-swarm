@@ -276,3 +276,14 @@ Legend: ✅ Implemented | 🔧 In Progress | ❌ Not Started | ⚠️ Partial/Bu
 | **Testing** | Comprehensive unit test suite for Phase 1-3 features via Vitest | ✅ |
 | **Phase 4** | Weapon evolution effects, Drone entity, cosmetics, daily systems | ✅ |
 | **Phase 5** | Boss system, boss entities, retention, monetization | ❌ |
+| **Phase 6** | Firebase Leaderboards, Auth, Cloud Saves, Realtime Analytics | ✅ |
+
+## Pre-Deployment Checklist (Important Reversions)
+
+Before pushing the game to production on Firebase Hosting, the following testing overrides must be reverted or addressed:
+
+- [ ] **Cosmetics Testing Override:** In `src/core/SaveManager.ts`, the `hasCosmetic(id: string)` method is currently hardcoded to `return true;` to unlock all cosmetics for testing. This must be reverted to check the actual `this.unlockedCosmetics` array.
+- [ ] **PRNG Override (Daily Challenge):** If `Math.random` is being overridden for testing daily challenges in `main.ts`, ensure it is only active in the daily challenge mode and not affecting standard runs.
+- [ ] **Firebase Security Rules:** Ensure Firestore security rules are strictly locked down to prevent unauthorized writes to `leaderboard` and `run_logs` collections (e.g., validate the schema and rate-limit if possible).
+- [ ] **Analytics Logging Costs:** Monitor the `run_logs` collection size and document write limits to ensure the free tier quota is not exceeded.
+

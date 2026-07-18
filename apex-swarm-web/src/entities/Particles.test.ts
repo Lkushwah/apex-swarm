@@ -12,7 +12,7 @@ describe('Particles Entity Unit Tests', () => {
         const initialLife = p.life;
         const initialSize = p.size;
         
-        const isAlive = p.update(0.1);
+        p.update(0.1);
         expect(p.life).toBeCloseTo(initialLife - 0.1);
         expect(p.size).toBeLessThan(initialSize);
         // Might be dead if initialLife was very small, but typically 0.25+

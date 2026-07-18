@@ -161,7 +161,7 @@ export class WeaponSystem {
 
         for (const drone of this.drones) {
             drone.isEvolved = w.evolved;
-            drone.update(dt, enemies, projectiles, null, dmg);
+            drone.update(dt, enemies, projectiles, dmg);
             
             // In evolved mode, draw continuous lasers
             if (drone.isEvolved && (drone as any).targetEnemy && !(drone as any).targetEnemy.isDead) {

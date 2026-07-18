@@ -37,7 +37,7 @@ export class UIManager {
         this.hud.classList.remove('hidden');
     }
 
-    public showGameOver(time: number, kills: number, weapons: any[], passives: any[], credits: number, cores: number) {
+    public showGameOver(time: number, kills: number, level: number, weapons: any[], passives: any[], credits: number, cores: number) {
         this.hideAll();
         this.gameOverScreen.classList.remove('hidden');
         this.survivalTimeText.innerText = `Survived: ${this.formatTime(time)}`;
@@ -45,7 +45,8 @@ export class UIManager {
         
         const statsDiv = document.getElementById('run-stats');
         if (statsDiv) {
-            let html = `<div style="margin-bottom: 8px;"><strong>Kills:</strong> ${kills}</div>`;
+            let html = `<div style="margin-bottom: 8px;"><strong>Level Reached:</strong> ${level}</div>`;
+            html += `<div style="margin-bottom: 8px;"><strong>Kills:</strong> ${kills}</div>`;
             
             html += `<div style="margin-bottom: 4px; color: #fbbf24;"><strong>Weapons</strong></div>`;
             if (weapons && weapons.length > 0) {

@@ -15,6 +15,8 @@
 * **Permanent Meta-Progression**: Extract "Cores" from your runs to spend in the **Power Upgrades** shop, permanently increasing your base stats across all runs.
 * **Daily Challenges**: Compete in deterministic daily runs using a unified daily seed with unique mutators, giving every player the exact same enemy spawns and RNG for an even playing field.
 * **Cosmetics Shop**: Flex your style by purchasing alternative bullet colors and visual flair using credits earned during your runs.
+* **Global Leaderboards & Cloud Sync**: Powered by Firebase, compete globally for the highest survival times. Runs and analytics are automatically synced to the cloud.
+* **Anonymous Authentication**: Jump right in without creating an account. Your stats and leaderboard entries are tied securely to your device.
 * **Mouse & Touch Support**: Playable anywhere. Move fluidly via cursor follow or mobile touch controls.
 
 ## 🛠️ Technology Stack
@@ -22,6 +24,7 @@
 Apex Swarm is built entirely from scratch with a custom engine architecture:
 * **Vanilla TypeScript**: Type-safe entity-component architecture with zero heavyweight frameworks.
 * **HTML5 Canvas API**: A highly optimized rendering loop supporting hundreds of entities, particles, and floating damage numbers simultaneously.
+* **Firebase (Backend as a Service)**: Handles anonymous user authentication, global leaderboards, cloud saves, and realtime analytics logging via Firestore.
 * **Vite**: Blazing fast development server and production bundler.
 * **Vitest**: Comprehensive unit testing ensuring combat math, AI pathfinding, and deterministic PRNG behavior remain stable.
 

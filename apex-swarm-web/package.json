@@ -11,9 +11,13 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.1",
+    "jsdom": "^29.1.1",
     "tailwindcss": "^4.3.1",
     "typescript": "~6.0.2",
     "vite": "^8.0.12",
     "vitest": "^4.1.9"
+  },
+  "dependencies": {
+    "firebase": "^12.16.0"
   }
 }

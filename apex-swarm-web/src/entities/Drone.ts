@@ -1,6 +1,5 @@
 import { Player } from './Player';
 import { Enemy } from './Enemy';
-import { Projectile } from './Projectile';
 import { MissileProjectile } from './Projectiles';
 
 export class Drone {
@@ -25,7 +24,7 @@ export class Drone {
         this.y = player.y + Math.sin(this.orbitAngle) * this.orbitDistance;
     }
 
-    public update(dt: number, enemies: Enemy[], projectiles: any[], apexSystem: any, damage: number) {
+    public update(dt: number, enemies: Enemy[], projectiles: any[], damage: number) {
         if (!this.isEvolved) {
             // Base behavior: Orbit player
             this.orbitAngle += dt * 2;
