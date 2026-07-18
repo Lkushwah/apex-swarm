@@ -248,6 +248,22 @@ Legend: ✅ Implemented | 🔧 In Progress | ❌ Not Started | ⚠️ Partial/Bu
 |---|---|---|---|
 | All audio SFX | — | ❌ | Not started, needs audio asset pipeline |
 
+## 17. Testing & Quality Assurance
+
+| Feature | File(s) | Status | Notes |
+|---|---|---|---|
+| Vitest configuration | `vitest.config.ts`, `package.json` | ✅ | |
+| Player unit tests | `entities/Player.test.ts` | ✅ | Covers dash, armor, lifesteal, regen |
+| Enemy unit tests | `entities/Enemy.test.ts` | ✅ | Covers Shielder block, Shooter attack, scaling |
+| Projectile unit tests | `entities/Projectile.test.ts` | ✅ | Covers collisions, crits, splash, bounce |
+| WeaponSystem unit tests | `systems/WeaponSystem.test.ts` | ✅ | Covers cooldown, damage calc, spread logic |
+| WaveManager unit tests | `systems/WaveManager.test.ts` | ✅ | Covers weighted spawning and time progression |
+| ApexSystem unit tests | `systems/ApexSystem.test.ts` | ✅ | Covers meter states, time slow, invincibility |
+| EvolutionSystem unit tests | `systems/EvolutionSystem.test.ts` | ✅ | Covers passive-weapon requirements |
+| Collectibles unit tests | `entities/Collectible.test.ts` | ✅ | Covers magnet radius and pickup logic |
+| Particles unit tests | `entities/Particles.test.ts` | ✅ | Covers floating text and shard gravity |
+| Upgrades unit tests | `data/upgrades.test.ts` | ✅ | Covers application logic for perm + run |
+
 ---
 
 ## Implementation Phases
@@ -257,5 +273,6 @@ Legend: ✅ Implemented | 🔧 In Progress | ❌ Not Started | ⚠️ Partial/Bu
 | **Phase 1** | Critical fixes (armor, crits, lifesteal, safety net, missing upgrades) | ✅ |
 | **Phase 2** | Enemy diversity (7 types, weighted spawns) | ✅ |
 | **Phase 3** | Particles, floating text, visual feedback | ✅ |
+| **Testing** | Comprehensive unit test suite for Phase 1-3 features via Vitest | ✅ |
 | **Phase 4** | Weapon evolution effects, Drone entity, cosmetics, daily systems | ❌ |
 | **Phase 5** | Boss system, boss entities, retention, monetization | ❌ |

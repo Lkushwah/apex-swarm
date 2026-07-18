@@ -4,42 +4,66 @@ import { Player } from '../entities/Player';
 import { Enemy } from '../entities/Enemy';
 import { Projectile } from '../entities/Projectile';
 
-describe('WeaponSystem', () => {
+describe('WeaponSystem Unit Tests', () => {
     let player: Player;
-    let weaponSystem: WeaponSystem;
+    let ws: WeaponSystem;
     let enemies: Enemy[];
     let projectiles: Projectile[];
 
     beforeEach(() => {
         player = new Player(100, 100);
-        player.weapons = [{ id: 'kinetic_blaster', level: 1, evolved: false }];
-        weaponSystem = new WeaponSystem(player);
-        enemies = [];
+        ws = new WeaponSystem(player);
+        enemies = [new Enemy(200, 100, 1.0, 'swarmer')]; // enemy to the right
         projectiles = [];
     });
 
-    it('should fire a projectile when cooldown expires and enemy is present', () => {
-        enemies.push(new Enemy(150, 100, 1)); // enemy 50px away
-        
-        weaponSystem.update(0.5, enemies, projectiles); // 0.5s passes, kinetic_blaster baseRate is 0.45 at Lvl 1
+    it('should fire equipped weapons if cooldown is ready and enemies exist', () => {
+        // Player starts with level 1 kinetic blaster
+        ws.update(0.1, enemies, projectiles); // Cooldown initially 0, should fire immediately
         
         expect(projectiles.length).toBe(1);
-        expect(projectiles[0].x).toBe(100); // starts at player
-        expect(projectiles[0].y).toBe(100);
-        expect(projectiles[0].vx).toBeGreaterThan(0); // moving right
+        expect(projectiles[0].damage).toBeGreaterThan(0);
+        // Projectile should be moving right (angle 0)
+        expect(projectiles[0].vx).toBeGreaterThan(0);
+        expect(projectiles[0].vy).toBeCloseTo(0);
+    });
+
+    it('should respect weapon cooldowns and fireRateMultiplier', () => {
+        player.fireRateMultiplier = 0.5; // fires twice as fast (cooldowns are halved)
+        
+        ws.update(0.1, enemies, projectiles); // Fires first shot
+        expect(projectiles.length).toBe(1);
+        
+        // Base kinetic blaster rate is 0.46 (Math.max(0.2, 0.5 - 0.04)). 
+        // With multiplier 0.5, cooldown set to 0.23.
+        
+        ws.update(0.1, enemies, projectiles); // Cooldown not ready
+        expect(projectiles.length).toBe(1);
+        
+        ws.update(0.15, enemies, projectiles); // 0.1 + 0.15 = 0.25 > 0.23, should fire again
+        expect(projectiles.length).toBe(2);
+    });
+
+    it('should apply apexDamageBonus to weapon damage', () => {
+        ws.apexDamageBonus = 1.0; // +100% damage
+        player.damageMultiplier = 1.0; // Total multiplier: 2.0
+        
+        ws.update(0.1, enemies, projectiles);
+        
+        const baseDmg = 25 * (1 + 1 * 0.15); // Level 1 kinetic blaster base damage = 28.75
+        expect(projectiles[0].damage).toBeCloseTo(baseDmg * 2.0);
+    });
+
+    it('Kinetic Blaster should fire multiple projectiles at higher levels', () => {
+        player.weapons[0].level = 3; // 1 + floor(3/2) = 2 projectiles
+        
+        ws.update(0.1, enemies, projectiles);
+        expect(projectiles.length).toBe(2);
     });
 
     it('should not fire if no enemies are present', () => {
-        weaponSystem.update(0.5, enemies, projectiles);
+        enemies = [];
+        ws.update(0.1, enemies, projectiles);
         expect(projectiles.length).toBe(0);
-    });
-
-    it('should factor in player damage multiplier', () => {
-        player.damageMultiplier = 2.0;
-        enemies.push(new Enemy(150, 100, 1));
-        
-        weaponSystem.update(0.5, enemies, projectiles);
-        
-        expect(projectiles[0].damage).toBeGreaterThan(25); // base is 25 * 1.15 = 28.75, *2.0 = 57.5
     });
 });

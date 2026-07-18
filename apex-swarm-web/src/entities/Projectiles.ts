@@ -1,7 +1,7 @@
 import { Projectile } from './Projectile';
 import { Enemy } from './Enemy';
 import { Player } from './Player';
-import { type FloatingText } from './Particles';
+import { FloatingText } from './Particles';
 
 export class MissileProjectile extends Projectile {
     private target: Enemy | null = null;
@@ -66,12 +66,12 @@ export class MissileProjectile extends Projectile {
                 if (totalLifesteal > 0) player.heal(dmgDealt * totalLifesteal);
 
                 // Floating text
-                Projectile.floatingTexts.push({
-                    x: other.x, y: other.y - 10,
-                    text: isCrit ? `${Math.floor(finalDamage)} CRIT!` : String(Math.floor(finalDamage)),
-                    color: isCrit ? '#fbbf24' : '#fca5a5',
-                    life: 0.5, maxLife: 0.5, vy: -30
-                } as FloatingText);
+                Projectile.floatingTexts.push(new FloatingText(
+                    other.x, other.y - 10,
+                    isCrit ? `${Math.floor(finalDamage)} CRIT!` : String(Math.floor(finalDamage)),
+                    isCrit ? '#fbbf24' : '#fca5a5',
+                    0.5
+                ));
             }
         }
 
@@ -191,12 +191,12 @@ export class ChainLightningProjectile extends Projectile {
         if (totalLifesteal > 0) player.heal(dmgDealt * totalLifesteal);
 
         // Floating text
-        Projectile.floatingTexts.push({
-            x: e.x, y: e.y - 10,
-            text: isCrit ? `${Math.floor(currentDamage)} CRIT!` : String(Math.floor(currentDamage)),
-            color: isCrit ? '#fbbf24' : '#93c5fd',
-            life: 0.5, maxLife: 0.5, vy: -30
-        } as FloatingText);
+        Projectile.floatingTexts.push(new FloatingText(
+            e.x, e.y - 10,
+            isCrit ? `${Math.floor(currentDamage)} CRIT!` : String(Math.floor(currentDamage)),
+            isCrit ? '#fbbf24' : '#93c5fd',
+            0.5
+        ));
 
         this.jumpsDone++;
         if (this.jumpsDone >= this.maxJumps) {
@@ -305,12 +305,12 @@ export class ScytheArcProjectile extends Projectile {
                 if (totalLifesteal > 0) player.heal(dmgDealt * totalLifesteal);
 
                 // Floating text
-                Projectile.floatingTexts.push({
-                    x: e.x, y: e.y - 10,
-                    text: isCrit ? `${Math.floor(d)} CRIT!` : String(Math.floor(d)),
-                    color: isCrit ? '#fbbf24' : '#fcd34d',
-                    life: 0.4, maxLife: 0.4, vy: -25
-                } as FloatingText);
+                Projectile.floatingTexts.push(new FloatingText(
+                    e.x, e.y - 10,
+                    isCrit ? `${Math.floor(d)} CRIT!` : String(Math.floor(d)),
+                    isCrit ? '#fbbf24' : '#fcd34d',
+                    0.4
+                ));
             }
         }
         void targetsHitThisSwing;

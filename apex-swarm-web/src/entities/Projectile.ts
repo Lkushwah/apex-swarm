@@ -1,6 +1,6 @@
 import { Enemy } from './Enemy';
 import { Player } from './Player';
-import { type FloatingText } from './Particles';
+import { FloatingText } from './Particles';
 
 export class Projectile {
     public x: number;
@@ -69,24 +69,24 @@ export class Projectile {
             player.heal(healAmount);
             // +HP floating text
             if (healAmount >= 1) {
-                Projectile.floatingTexts.push({
-                    x: player.x, y: player.y - 20,
-                    text: `+${Math.floor(healAmount)} HP`,
-                    color: '#4ade80',
-                    life: 0.6, maxLife: 0.6, vy: -40
-                } as FloatingText);
+                Projectile.floatingTexts.push(new FloatingText(
+                    player.x, player.y - 20,
+                    `+${Math.floor(healAmount)} HP`,
+                    '#4ade80',
+                    0.6
+                ));
             }
         }
 
         // Damage number floating text
         const dmgColor = isCrit ? '#fbbf24' : '#fca5a5';
         const dmgText = isCrit ? `${Math.floor(finalDamage)} CRIT!` : String(Math.floor(finalDamage));
-        Projectile.floatingTexts.push({
-            x: e.x, y: e.y - 10,
-            text: dmgText,
-            color: dmgColor,
-            life: 0.5, maxLife: 0.5, vy: -30
-        } as FloatingText);
+        Projectile.floatingTexts.push(new FloatingText(
+            e.x, e.y - 10,
+            dmgText,
+            dmgColor,
+            0.5
+        ));
 
         // Hit particles
         Projectile.particles.push({
