@@ -287,4 +287,5 @@ Before pushing the game to production on Firebase Hosting, the following testing
 - [ ] **Firebase Security Rules:** Ensure Firestore security rules are strictly locked down to prevent unauthorized writes to `leaderboard` and `run_logs` collections (e.g., validate the schema and rate-limit if possible).
 - [ ] **Analytics Logging Costs:** Monitor the `run_logs` collection size and document write limits to ensure the free tier quota is not exceeded.
 - [ ] **Anonymous User Auth:** We currently fallback to "Anonymous" if no display name is entered. For a full production launch, ensure the name prompt accurately enforces saving or links to Firebase anonymous auth UID if needed.
+- [ ] **Local Analytics Logger:** The `/api/logs` endpoint used to save local logs during dev is harmless in production (it will just return a 404 which `main.ts` safely catches), but consider removing the fetch call in `main.ts` entirely to avoid unnecessary failed network requests on live servers.
 

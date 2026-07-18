@@ -244,7 +244,7 @@ function handleGameOver() {
     const runLog = analyticsLogger.getRunLog();
     analyticsLogger.logEvent('GAME_OVER', { finalLevel: player.level, finalKills: totalKills }, survivalTime);
     
-    firebaseManager.saveRunLog({
+    const runLogData = {
         displayName: displayName || 'Anonymous',
         survivalTime: survivalTime,
         totalKills: totalKills,
@@ -253,7 +253,16 @@ function handleGameOver() {
         passives: player.passives.map(p => ({ id: p.id, level: p.level })),
         events: runLog.events,
         statsTimeline: runLog.statsTimeline
-    });
+    };
+
+    firebaseManager.saveRunLog(runLogData);
+
+    // Also save locally via Vite dev server plugin
+    fetch('/api/logs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(runLogData, null, 2)
+    }).catch(() => { /* Ignore in production when endpoint doesn't exist */ });
 
     uiManager.showGameOver(survivalTime, totalKills, player.level, player.weapons, player.passives, creditsEarnedThisRun, coresEarnedThisRun);
 }
