@@ -28,6 +28,11 @@ import { PERM_UPGRADES } from './data/upgrades';
 const canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
 const renderer = new Renderer(canvas);
 const inputManager = new InputManager(canvas);
+inputManager.onDoubleTap(() => {
+    if (gameState === 'PLAYING' && apexSystem && apexSystem.canTrigger()) {
+        apexSystem.manualTrigger();
+    }
+});
 const saveManager = new SaveManager();
 const uiManager = new UIManager();
 
@@ -163,6 +168,12 @@ function handleGameOver() {
 // ---- Button Wiring ----
 document.getElementById('start-btn')!.addEventListener('click', startGame);
 document.getElementById('restart-btn')!.addEventListener('click', startGame);
+document.getElementById('go-main-menu-btn')!.addEventListener('click', () => {
+    gameState = 'MENU';
+    document.getElementById('gameover-screen')?.classList.add('hidden');
+    document.getElementById('main-menu')?.classList.remove('hidden');
+    document.getElementById('hud')?.classList.add('hidden');
+});
 document.getElementById('power-upgrades-btn')!.addEventListener('click', () => {
     document.getElementById('main-menu')?.classList.add('hidden');
     powerUpgradesUI.show();
