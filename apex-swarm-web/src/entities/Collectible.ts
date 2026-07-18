@@ -1,5 +1,7 @@
 import { Player } from './Player';
 
+export type CollectibleType = 'xp' | 'credit' | 'core';
+
 export class Collectible {
     public x: number;
     public y: number;
@@ -8,18 +10,24 @@ export class Collectible {
     public xpValue: number;
     public isCollected: boolean = false;
     private magnetSpeed: number = 0;
-    public type: 'xp' | 'credit';
+    public type: CollectibleType;
 
-    constructor(x: number, y: number, type: 'xp' | 'credit' = 'xp') {
+    constructor(x: number, y: number, type: CollectibleType = 'xp') {
         this.x = x;
         this.y = y;
         this.type = type;
-        if (type === 'xp') {
-            this.color = '#4ade80'; // Green 400
+        if (this.type === 'xp') {
+            this.color = '#4ade80';
+            this.radius = 4;
             this.xpValue = 35;
-        } else {
-            this.color = '#fbbf24'; // Amber 400
+        } else if (this.type === 'credit') {
+            this.color = '#fbbf24';
+            this.radius = 3;
             this.xpValue = 0;
+        } else if (this.type === 'core') {
+            this.color = '#f0abfc'; // Pink/Iridescent
+            this.radius = 5;
+            this.xpValue = 100;
         }
     }
 

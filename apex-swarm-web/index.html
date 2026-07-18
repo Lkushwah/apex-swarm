@@ -38,7 +38,10 @@
 
         <span id="time-text" class="hud-time">00:00</span>
       </div>
-      <div id="credits-hud">💰 <span id="hud-credits">0</span></div>
+      <div style="display:flex; flex-direction:column; align-items:flex-end;">
+        <div id="credits-hud">💰 <span id="hud-credits">0</span></div>
+        <div id="cores-hud" style="color:#f0abfc; font-weight:bold; font-size:14px; margin-top:4px;">💎 <span id="hud-cores">0</span></div>
+      </div>
     </div>
 
     <!-- APEX MODE Banner -->
@@ -54,7 +57,9 @@
       <p class="game-tagline">You are the swarm.</p>
       <div class="menu-buttons">
         <button id="start-btn" class="btn btn-primary pulse-anim">▶ START RUN</button>
+        <button id="daily-challenge-btn" class="btn btn-secondary" style="border-color: #f0abfc; color: #f0abfc;">📅 DAILY CHALLENGE</button>
         <button id="power-upgrades-btn" class="btn btn-secondary">⚡ POWER UPGRADES</button>
+        <button id="cosmetics-btn" class="btn btn-secondary" style="border-color: #a855f7; color: #a855f7;">🎨 COSMETICS</button>
       </div>
       <p class="menu-hint">Move with Mouse or Touch · Auto-Attack · Survive!</p>
     </div>
@@ -74,6 +79,16 @@
     <!-- ============ POWER UPGRADES SHOP ============ -->
     <div id="power-upgrades-screen" class="overlay hidden">
       <!-- Filled dynamically by PowerUpgradesUI -->
+    </div>
+
+    <!-- ============ COSMETICS SHOP ============ -->
+    <div id="cosmetics-screen" class="overlay hidden">
+      <!-- Filled dynamically by CosmeticsUI -->
+    </div>
+
+    <!-- ============ DAILY CHALLENGE LOBBY ============ -->
+    <div id="daily-challenge-screen" class="overlay hidden">
+      <!-- Filled dynamically by DailyChallengeUI -->
     </div>
 
     <!-- ============ GAME OVER ============ -->

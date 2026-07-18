@@ -17,6 +17,9 @@ import { ApexSystem } from './systems/ApexSystem';
 import { UIManager } from './ui/UIManager';
 import { LevelUpUI } from './ui/LevelUpUI';
 import { PowerUpgradesUI } from './ui/PowerUpgradesUI';
+import { CosmeticsUI, COSMETICS } from './ui/CosmeticsUI';
+import { DailyChallengeUI } from './ui/DailyChallengeUI';
+import { PRNG } from './core/PRNG';
 
 import { SaveManager } from './core/SaveManager';
 import { PERM_UPGRADES } from './data/upgrades';
@@ -48,6 +51,8 @@ let apexSystem: ApexSystem;
 
 // ---- Sub-UIs ----
 const powerUpgradesUI = new PowerUpgradesUI(saveManager, () => uiManager.showMainMenu());
+const cosmeticsUI = new CosmeticsUI(saveManager, undefined, () => uiManager.showMainMenu());
+const dailyChallengeUI = new DailyChallengeUI(saveManager, (seed, mods) => startDailyRun(seed, mods), () => uiManager.showMainMenu());
 const levelUpUI = new LevelUpUI(() => {
     gameState = 'PLAYING';
 });
@@ -105,17 +110,50 @@ function startGame() {
     const banishLevel = saveManager.getUpgradeLevel('perm_banish');
     levelUpUI.setCharges(1 + rerollLevel, 1 + banishLevel);
 
+    const equipped = saveManager.getEquippedCosmetic();
+    if (equipped) {
+        const cos = COSMETICS.find(c => c.id === equipped);
+        if (cos) player.color = cos.color;
+    }
+    cosmeticsUI.setPlayer(player); // Update preview
+
     gameState = 'PLAYING';
     uiManager.showHUD();
 }
 
+function startDailyRun(seed: number, modifiers: string[]) {
+    startGame();
+    
+    // Override random system with PRNG
+    const prng = new PRNG(seed);
+    Math.random = () => prng.next(); // Not safe for real prod, but fine for local run
+    
+    // Apply modifiers
+    if (modifiers.includes('Player Speed -20%')) {
+        player.speed *= 0.8;
+    }
+    if (modifiers.includes('Start with 0 Upgrades')) {
+        // Reset perm upgrades? Actually, `startGame` just applied them. Let's undo it.
+        player = new Player(renderer.getDimensions().width / 2, renderer.getDimensions().height / 2);
+        const equipped = saveManager.getEquippedCosmetic();
+        if (equipped) {
+            const cos = COSMETICS.find(c => c.id === equipped);
+            if (cos) player.color = cos.color;
+        }
+        weaponSystem = new WeaponSystem(player);
+        apexSystem = new ApexSystem(player);
+    }
+    // We would pass modifiers to waveManager for Enemy HP, Spawns, etc.
+    (waveManager as any).dailyModifiers = modifiers;
+}
+
 function handleGameOver() {
     gameState = 'GAMEOVER';
-    const credits = Math.floor(
-        (waveManager.survivalTime * 0.5 + creditsEarnedThisRun) * player.creditMultiplier
-    );
-    saveManager.addCredits(credits);
-    uiManager.showGameOver(waveManager.survivalTime, credits, player, killsThisRun);
+    saveManager.addCredits(Math.floor(creditsEarnedThisRun * (1 + player.creditMultiplier)));
+    if ((saveManager as any).addCores) {
+        (saveManager as any).addCores(coresEarnedThisRun);
+    }
+    uiManager.showGameOver(survivalTime, totalKills, player.weapons, player.passives, creditsEarnedThisRun, coresEarnedThisRun);
 }
 
 // ---- Button Wiring ----
@@ -124,6 +162,14 @@ document.getElementById('restart-btn')!.addEventListener('click', startGame);
 document.getElementById('power-upgrades-btn')!.addEventListener('click', () => {
     document.getElementById('main-menu')?.classList.add('hidden');
     powerUpgradesUI.show();
+});
+document.getElementById('cosmetics-btn')!.addEventListener('click', () => {
+    document.getElementById('main-menu')?.classList.add('hidden');
+    cosmeticsUI.show();
+});
+document.getElementById('daily-challenge-btn')!.addEventListener('click', () => {
+    document.getElementById('main-menu')?.classList.add('hidden');
+    dailyChallengeUI.show();
 });
 document.getElementById('go-upgrades-btn')!.addEventListener('click', () => {
     document.getElementById('gameover-screen')?.classList.add('hidden');
@@ -188,6 +234,7 @@ const gameLoop = new GameLoop(
 
         // Wave & weapons (with effective damage multiplier including APEX bonus)
         waveManager.update(scaledDt, enemies);
+        survivalTime = waveManager.survivalTime;
         const effectiveDamageBonus = apexSystem.damageMultiplierBonus;
         weaponSystem.apexDamageBonus = effectiveDamageBonus;
         weaponSystem.update(scaledDt, enemies, projectiles);
@@ -218,13 +265,14 @@ const gameLoop = new GameLoop(
             if (e.hp <= 0 && !e.isDead) {
                 e.isDead = true;
                 apexSystem.addKill(); // fill meter
-                killsThisRun++;
+                totalKills++;
                 
                 // Death particles
                 createParticles(particles, e.x, e.y, e.color, 8);
 
                 if (Math.random() > 0.5) collectibles.push(new Collectible(e.x, e.y, 'xp'));
                 if (Math.random() < 0.1) collectibles.push(new Collectible(e.x, e.y, 'credit'));
+                if (Math.random() < 0.02) collectibles.push(new Collectible(e.x, e.y, 'core'));
                 enemies.splice(i, 1);
                 continue;
             }
@@ -234,9 +282,10 @@ const gameLoop = new GameLoop(
                 // Self-destruct enemies (swarmer contact, etc.)
                 createParticles(particles, e.x, e.y, e.color, 5);
                 apexSystem.addKill();
-                killsThisRun++;
+                totalKills++;
                 if (Math.random() > 0.5) collectibles.push(new Collectible(e.x, e.y, 'xp'));
                 if (Math.random() < 0.1) collectibles.push(new Collectible(e.x, e.y, 'credit'));
+                if (Math.random() < 0.02) collectibles.push(new Collectible(e.x, e.y, 'core'));
                 enemies.splice(i, 1);
             }
         }
@@ -275,6 +324,9 @@ const gameLoop = new GameLoop(
                 } else if (c.type === 'credit') {
                     creditsEarnedThisRun++;
                     floatingTexts.push(new FloatingText(c.x, c.y, '+1 💰', '#fbbf24', 0.5));
+                } else if (c.type === 'core') {
+                    coresEarnedThisRun++;
+                    floatingTexts.push(new FloatingText(c.x, c.y, '+1 CORE', '#f0abfc', 0.5));
                 }
                 collectibles.splice(i, 1);
             }
@@ -297,7 +349,7 @@ const gameLoop = new GameLoop(
             apexSystem.fillRateBonus = (saveManager.getUpgradeLevel('perm_apex_fill') * 0.06) + (apexCapPassive.level * 0.08);
         }
 
-        uiManager.updateHUD(player.hp, player.maxHp, player.xp, player.xpToNext, player.level, waveManager.survivalTime, saveManager.getCredits(), apexSystem.meter);
+        uiManager.updateHUD(player.hp, player.maxHp, player.xp, player.xpToNext, player.level, waveManager.survivalTime, saveManager.getCredits(), apexSystem.meter, saveManager.getCores());
     },
 
     // RENDER
@@ -318,6 +370,9 @@ const gameLoop = new GameLoop(
 
         collectibles.forEach(c => c.draw(ctx, waveManager?.survivalTime ?? 0));
         enemies.forEach(e => e.draw(ctx));
+        // Drones
+        weaponSystem.drones.forEach(d => d.draw(ctx, performance.now() / 1000));
+
         projectiles.forEach(p => p.draw(ctx));
         if (player) player.draw(ctx, apexSystem?.getState());
 

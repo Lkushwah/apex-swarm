@@ -20,6 +20,7 @@ export class UIManager {
     // Game Over elements
     private survivalTimeText = document.getElementById('survival-time')!;
     private creditsEarnedText = document.getElementById('credits-earned')!;
+    private hudCores = document.getElementById('hud-cores');
 
     // Apex elements
     private apexTimerBar = document.getElementById('apex-timer-bar')!;
@@ -36,43 +37,39 @@ export class UIManager {
         this.hud.classList.remove('hidden');
     }
 
-    public showGameOver(time: number, credits: number, player?: any, kills?: number) {
+    public showGameOver(time: number, kills: number, weapons: any[], passives: any[], credits: number, cores: number) {
         this.hideAll();
         this.gameOverScreen.classList.remove('hidden');
         this.survivalTimeText.innerText = `Survived: ${this.formatTime(time)}`;
-        this.creditsEarnedText.innerText = `+${credits} Credits Earned`;
+        this.creditsEarnedText.innerText = `+${credits} Credits | +${cores} Cores`;
         
         const statsDiv = document.getElementById('run-stats');
         if (statsDiv) {
-            if (!player) {
-                statsDiv.innerHTML = '';
+            let html = `<div style="margin-bottom: 8px;"><strong>Kills:</strong> ${kills}</div>`;
+            
+            html += `<div style="margin-bottom: 4px; color: #fbbf24;"><strong>Weapons</strong></div>`;
+            if (weapons && weapons.length > 0) {
+                html += `<ul style="margin: 0 0 8px 0; padding-left: 20px;">`;
+                for (const w of weapons) {
+                    html += `<li>${w.id.replace('_', ' ').toUpperCase()} (Lv.${w.level}) ${w.evolved ? '⭐' : ''}</li>`;
+                }
+                html += `</ul>`;
             } else {
-                let html = `<div style="margin-bottom: 8px;"><strong>Level:</strong> ${player.level} | <strong>Kills:</strong> ${kills || 0}</div>`;
-                
-                html += `<div style="margin-bottom: 4px; color: #fbbf24;"><strong>Weapons</strong></div>`;
-                if (player.weapons && player.weapons.length > 0) {
-                    html += `<ul style="margin: 0 0 8px 0; padding-left: 20px;">`;
-                    for (const w of player.weapons) {
-                        html += `<li>${w.id.replace('_', ' ').toUpperCase()} (Lv.${w.level}) ${w.evolved ? '⭐' : ''}</li>`;
-                    }
-                    html += `</ul>`;
-                } else {
-                    html += `<div style="margin-bottom: 8px; color: #94a3b8;">None</div>`;
-                }
-                
-                html += `<div style="margin-bottom: 4px; color: #38bdf8;"><strong>Passives</strong></div>`;
-                if (player.passives && player.passives.length > 0) {
-                    html += `<ul style="margin: 0; padding-left: 20px;">`;
-                    for (const p of player.passives) {
-                        html += `<li>${p.id.replace('_', ' ').toUpperCase()} (Lv.${p.level})</li>`;
-                    }
-                    html += `</ul>`;
-                } else {
-                    html += `<div style="color: #94a3b8;">None</div>`;
-                }
-                
-                statsDiv.innerHTML = html;
+                html += `<div style="margin-bottom: 8px; color: #94a3b8;">None</div>`;
             }
+            
+            html += `<div style="margin-bottom: 4px; color: #38bdf8;"><strong>Passives</strong></div>`;
+            if (passives && passives.length > 0) {
+                html += `<ul style="margin: 0; padding-left: 20px;">`;
+                for (const p of passives) {
+                    html += `<li>${p.id.replace('_', ' ').toUpperCase()} (Lv.${p.level})</li>`;
+                }
+                html += `</ul>`;
+            } else {
+                html += `<div style="color: #94a3b8;">None</div>`;
+            }
+            
+            statsDiv.innerHTML = html;
         }
     }
 
@@ -87,12 +84,13 @@ export class UIManager {
 
     private apexMeterTrack = document.querySelector('.apex-meter-track') as HTMLElement;
 
-    public updateHUD(hp: number, maxHp: number, xp: number, xpToNext: number, level: number, time: number, credits: number, apexMeter: number) {
+    public updateHUD(hp: number, maxHp: number, xp: number, xpToNext: number, level: number, time: number, credits: number, apexMeter: number, cores: number) {
         this.hpFill.style.width = `${Math.max(0, (hp / maxHp) * 100)}%`;
         this.xpFill.style.width = `${Math.min(100, (xp / xpToNext) * 100)}%`;
         this.levelText.innerText = `LVL ${level}`;
         this.timeText.innerText = this.formatTime(time);
         this.hudCredits.innerText = String(credits);
+        if (this.hudCores) this.hudCores.innerText = String(cores);
 
         this.apexMeterFill.style.width = `${Math.min(100, apexMeter)}%`;
         if (apexMeter >= 100) {

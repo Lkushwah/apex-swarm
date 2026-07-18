@@ -61,6 +61,7 @@ export class Enemy {
     public isDead: boolean = false;
     public enemyType: EnemyType;
     public shape: string;
+    public stunTimer: number = 0;
 
     // Shielder: orientation angle (the "front" of the shield)
     private shieldAngle: number = 0;
@@ -129,32 +130,36 @@ export class Enemy {
     public update(dt: number, player: Player, canTakeDamage: boolean = true) {
         if (this.isDead) return;
 
-        const dx = player.x - this.x;
-        const dy = player.y - this.y;
-        const dist = Math.hypot(dx, dy);
+        if (this.stunTimer > 0) {
+            this.stunTimer -= dt;
+        } else {
+            const dx = player.x - this.x;
+            const dy = player.y - this.y;
+            const dist = Math.hypot(dx, dy);
 
-        switch (this.enemyType) {
-            case 'swarmer':
-                this.updateSwarmer(dt, dx, dy, dist, player, canTakeDamage);
-                break;
-            case 'brute':
-                this.updateBrute(dt, dx, dy, dist, player, canTakeDamage);
-                break;
-            case 'shooter':
-                this.updateShooter(dt, dx, dy, dist, player, canTakeDamage);
-                break;
-            case 'shielder':
-                this.updateShielder(dt, dx, dy, dist, player, canTakeDamage);
-                break;
-            case 'phasewraith':
-                this.updatePhasewraith(dt, dx, dy, dist, player, canTakeDamage);
-                break;
-            case 'bulwark_drone':
-                this.updateBulwarkDrone(dt, dx, dy, dist, player, canTakeDamage);
-                break;
-            case 'glitch_swarm':
-                this.updateSwarmer(dt, dx, dy, dist, player, canTakeDamage);
-                break;
+            switch (this.enemyType) {
+                case 'swarmer':
+                    this.updateSwarmer(dt, dx, dy, dist, player, canTakeDamage);
+                    break;
+                case 'brute':
+                    this.updateBrute(dt, dx, dy, dist, player, canTakeDamage);
+                    break;
+                case 'shooter':
+                    this.updateShooter(dt, dx, dy, dist, player, canTakeDamage);
+                    break;
+                case 'shielder':
+                    this.updateShielder(dt, dx, dy, dist, player, canTakeDamage);
+                    break;
+                case 'phasewraith':
+                    this.updatePhasewraith(dt, dx, dy, dist, player, canTakeDamage);
+                    break;
+                case 'bulwark_drone':
+                    this.updateBulwarkDrone(dt, dx, dy, dist, player, canTakeDamage);
+                    break;
+                case 'glitch_swarm':
+                    this.updateSwarmer(dt, dx, dy, dist, player, canTakeDamage);
+                    break;
+            }
         }
 
         // Update enemy projectiles (Shooter)
