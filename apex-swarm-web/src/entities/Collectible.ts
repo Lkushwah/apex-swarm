@@ -6,8 +6,8 @@ export class Collectible {
     public x: number;
     public y: number;
     public radius: number = 6;
-    public color: string;
-    public xpValue: number;
+    public color: string = '#fff';
+    public xpValue: number = 0;
     public isCollected: boolean = false;
     private magnetSpeed: number = 0;
     public type: CollectibleType;

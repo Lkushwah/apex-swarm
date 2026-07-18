@@ -12,6 +12,7 @@ export class Projectile {
     public color: string = '#fde047'; // Yellow 300
     public life: number = 2; // seconds
     public isDead: boolean = false;
+    public angle: number = 0;
 
     // Shared arrays for feedback (set by main.ts)
     public static floatingTexts: FloatingText[] = [];
@@ -20,6 +21,7 @@ export class Projectile {
     constructor(x: number, y: number, angle: number, damage: number, speed: number) {
         this.x = x;
         this.y = y;
+        this.angle = angle;
         this.vx = Math.cos(angle) * speed;
         this.vy = Math.sin(angle) * speed;
         this.damage = damage;

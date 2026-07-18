@@ -43,7 +43,9 @@ let particles: Particle[] = [];
 let floatingTexts: FloatingText[] = [];
 let apexShards: ApexShard[] = [];
 let creditsEarnedThisRun: number = 0;
-let killsThisRun: number = 0;
+let coresEarnedThisRun: number = 0;
+let totalKills: number = 0;
+let survivalTime: number = 0;
 
 let weaponSystem: WeaponSystem;
 let waveManager: WaveManager;
@@ -84,7 +86,9 @@ function startGame() {
     floatingTexts = [];
     apexShards = [];
     creditsEarnedThisRun = 0;
-    killsThisRun = 0;
+    coresEarnedThisRun = 0;
+    totalKills = 0;
+    survivalTime = 0;
 
     // Wire particle/text arrays into Projectile's static feedback system
     Projectile.floatingTexts = floatingTexts;
@@ -371,7 +375,7 @@ const gameLoop = new GameLoop(
         collectibles.forEach(c => c.draw(ctx, waveManager?.survivalTime ?? 0));
         enemies.forEach(e => e.draw(ctx));
         // Drones
-        weaponSystem.drones.forEach(d => d.draw(ctx, performance.now() / 1000));
+        weaponSystem.drones.forEach(d => d.draw(ctx));
 
         projectiles.forEach(p => p.draw(ctx));
         if (player) player.draw(ctx, apexSystem?.getState());

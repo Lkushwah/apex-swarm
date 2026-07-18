@@ -1,6 +1,7 @@
 import { Player } from './Player';
 import { Enemy } from './Enemy';
-import { Projectile, MissileProjectile } from './Projectiles';
+import { Projectile } from './Projectile';
+import { MissileProjectile } from './Projectiles';
 
 export class Drone {
     public x: number;
