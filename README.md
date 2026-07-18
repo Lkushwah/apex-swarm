@@ -17,6 +17,7 @@
 * **Cosmetics Shop**: Flex your style by purchasing alternative bullet colors and visual flair using credits earned during your runs.
 * **Global Leaderboards & Cloud Sync**: Powered by Firebase, compete globally for the highest survival times. Runs and analytics are automatically synced to the cloud.
 * **Anonymous Authentication**: Jump right in without creating an account. Your stats and leaderboard entries are tied securely to your device.
+* **Real-time Player Analytics**: The game tracks every movement, HP change, and event timeline (level-ups, weapon acquisitions, APEX triggers) which is uploaded upon game over.
 * **Mouse & Touch Support**: Playable anywhere. Move fluidly via cursor follow or mobile touch controls.
 
 ## 🛠️ Technology Stack

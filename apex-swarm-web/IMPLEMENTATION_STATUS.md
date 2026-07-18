@@ -286,4 +286,5 @@ Before pushing the game to production on Firebase Hosting, the following testing
 - [ ] **PRNG Override (Daily Challenge):** If `Math.random` is being overridden for testing daily challenges in `main.ts`, ensure it is only active in the daily challenge mode and not affecting standard runs.
 - [ ] **Firebase Security Rules:** Ensure Firestore security rules are strictly locked down to prevent unauthorized writes to `leaderboard` and `run_logs` collections (e.g., validate the schema and rate-limit if possible).
 - [ ] **Analytics Logging Costs:** Monitor the `run_logs` collection size and document write limits to ensure the free tier quota is not exceeded.
+- [ ] **Anonymous User Auth:** We currently fallback to "Anonymous" if no display name is entered. For a full production launch, ensure the name prompt accurately enforces saving or links to Firebase anonymous auth UID if needed.
 
