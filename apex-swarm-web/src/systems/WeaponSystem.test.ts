@@ -66,4 +66,18 @@ describe('WeaponSystem Unit Tests', () => {
         ws.update(0.1, enemies, projectiles);
         expect(projectiles.length).toBe(0);
     });
+
+    it('should fire RailgunBeam when kinetic_blaster is evolved', () => {
+        player.weapons[0].evolved = true;
+        ws.update(0.1, enemies, projectiles);
+        expect(projectiles.length).toBe(1);
+        expect(projectiles[0].constructor.name).toBe('RailgunBeam');
+    });
+
+    it('should maintain drones for drone_swarm weapon', () => {
+        player.weapons = [{ id: 'drone_swarm', level: 1, evolved: false }];
+        ws.update(0.1, enemies, projectiles);
+        expect(ws.drones.length).toBeGreaterThan(0);
+        expect(ws.drones[0].constructor.name).toBe('Drone');
+    });
 });

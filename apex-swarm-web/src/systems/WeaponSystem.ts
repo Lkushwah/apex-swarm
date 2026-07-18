@@ -143,6 +143,7 @@ export class WeaponSystem {
                 const baseDmg = 35 * (1 + w.level * 0.12);
                 projectiles.push(new ScytheArcProjectile(this.player, angle, baseDmg * effectiveDamageMult));
             }
+        }
 
         this.cooldowns[w.id] = baseRate * this.player.fireRateMultiplier;
     }

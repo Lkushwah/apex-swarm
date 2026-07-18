@@ -18,6 +18,6 @@ export class PRNG {
     }
 
     public nextInt(min: number, max: number): number {
-        return Math.floor(this.nextRange(min, max + 1));
+        return Math.floor(this.nextRange(min, max));
     }
 }
