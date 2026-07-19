@@ -52,7 +52,7 @@ let feedbackUI: FeedbackUI;
 let tutorialManager: TutorialManager;
 
 // ---- Game State ----
-type GameState = 'MENU' | 'PLAYING' | 'LEVELUP' | 'GAMEOVER' | 'TUTORIAL';
+type GameState = 'MENU' | 'PLAYING' | 'LEVELUP' | 'GAMEOVER' | 'TUTORIAL' | 'PAUSED' | 'QUIT_CONFIRM';
 let gameState: GameState = 'MENU';
 
 let player: Player;
@@ -382,7 +382,84 @@ document.getElementById('apex-trigger-btn')!.addEventListener('click', () => {
         }
     }
 });
+
+// ---- Pause Logic & Wiring ----
+function pauseGame() {
+    gameState = 'PAUSED';
+    document.getElementById('pause-screen')?.classList.remove('hidden');
+}
+
+function resumeGame() {
+    gameState = 'PLAYING';
+    document.getElementById('pause-screen')?.classList.add('hidden');
+    document.getElementById('quit-confirm-screen')?.classList.add('hidden');
+}
+
+function quitToMainMenuConfirm() {
+    gameState = 'QUIT_CONFIRM';
+    document.getElementById('pause-screen')?.classList.add('hidden');
+    document.getElementById('quit-confirm-screen')?.classList.remove('hidden');
+}
+
+function cancelQuit() {
+    gameState = 'PAUSED';
+    document.getElementById('quit-confirm-screen')?.classList.add('hidden');
+    document.getElementById('pause-screen')?.classList.remove('hidden');
+}
+
+function quitToMainMenu() {
+    document.getElementById('pause-screen')?.classList.add('hidden');
+    document.getElementById('quit-confirm-screen')?.classList.add('hidden');
+    document.getElementById('hud')?.classList.add('hidden');
+    gameState = 'MENU';
+    document.getElementById('main-menu')?.classList.remove('hidden');
+}
+
+document.getElementById('pause-btn')!.addEventListener('click', () => {
+    if (gameState === 'PLAYING') {
+        pauseGame();
+    }
+});
+document.getElementById('pause-resume-btn')!.addEventListener('click', () => {
+    resumeGame();
+});
+document.getElementById('pause-quit-btn')!.addEventListener('click', () => {
+    quitToMainMenuConfirm();
+});
+document.getElementById('quit-yes-btn')!.addEventListener('click', () => {
+    quitToMainMenu();
+});
+document.getElementById('quit-no-btn')!.addEventListener('click', () => {
+    cancelQuit();
+});
+document.getElementById('pause-tutorial-btn')!.addEventListener('click', () => {
+    gameState = 'TUTORIAL';
+    document.getElementById('pause-screen')?.classList.add('hidden');
+    tutorialUI.show(
+        'HOW TO PLAY',
+        '• <span style="color:#38bdf8; font-weight:bold;">Move</span>: Drag or move cursor to navigate.<br/><br/>' +
+        '• <span style="color:#f59e0b; font-weight:bold;">Combat</span>: Weapons fire automatically.<br/><br/>' +
+        '• <span style="color:#fbbf24; font-weight:bold;">Dash</span>: Press SHIFT or Double Tap to dash.<br/><br/>' +
+        '• <span style="color:#ef4444; font-weight:bold;">Apex Mode</span>: Press SPACE / Click APEX button at 100% charge to gain invincibility + massive damage boost.<br/><br/>' +
+        '• <span style="color:#a855f7; font-weight:bold;">Evolutions</span>: Upgrade a weapon to level 8 with its matching passive to evolve it.'
+    );
+    tutorialUI.onDismiss = () => {
+        gameState = 'PAUSED';
+        document.getElementById('pause-screen')?.classList.remove('hidden');
+    };
+});
 window.addEventListener('keydown', (e) => {
+    if (e.code === 'Escape' || e.code === 'KeyP') {
+        if (gameState === 'PLAYING') {
+            e.preventDefault();
+            pauseGame();
+        } else if (gameState === 'PAUSED') {
+            e.preventDefault();
+            resumeGame();
+        }
+        return;
+    }
+    
     if (gameState !== 'PLAYING') return;
     if (e.code === 'Space') {
         e.preventDefault();
@@ -422,7 +499,7 @@ window.addEventListener('pointerup', (e) => {
 const gameLoop = new GameLoop(
     // UPDATE
     (dt) => {
-        if (gameState === 'MENU' || gameState === 'LEVELUP' || gameState === 'TUTORIAL') return;
+        if (gameState === 'MENU' || gameState === 'LEVELUP' || gameState === 'TUTORIAL' || gameState === 'PAUSED' || gameState === 'QUIT_CONFIRM') return;
         if (gameState === 'GAMEOVER') return;
 
         inputManager.update();

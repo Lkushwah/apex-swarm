@@ -37,11 +37,38 @@
           </div>
         </div>
 
-        <span id="time-text" class="hud-time">00:00</span>
+        <div style="display: flex; align-items: center; gap: 12px; pointer-events: all;">
+          <span id="time-text" class="hud-time">00:00</span>
+          <button id="pause-btn" style="background: rgba(30, 41, 59, 0.75); border: 2px solid #475569; border-radius: 50%; width: 34px; height: 34px; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold; transition: all 0.2s; outline: none; margin-top: -2px;">⏸</button>
+        </div>
       </div>
       <div style="display:flex; flex-direction:column; align-items:flex-end;">
         <div id="credits-hud">💰 <span id="hud-credits">0</span></div>
         <div id="cores-hud" style="color:#f0abfc; font-weight:bold; font-size:14px; margin-top:4px;">💎 <span id="hud-cores">0</span></div>
+      </div>
+    </div>
+
+    <!-- ============ PAUSE MENU ============ -->
+    <div id="pause-screen" class="overlay hidden">
+      <div class="menu-bg-glow" style="background: radial-gradient(circle, rgba(56,189,248,0.15) 0%, rgba(0,0,0,0) 70%);"></div>
+      <h2 style="color: #38bdf8; text-shadow: 0 0 10px rgba(56,189,248,0.5); font-size: 36px; margin-bottom: 24px; font-family: 'Rajdhani', sans-serif; font-weight: 700; letter-spacing: 0.05em;">GAME PAUSED</h2>
+      
+      <div style="width: 90%; max-width: 320px; display: flex; flex-direction: column; gap: 16px; position: relative;">
+        <button id="pause-resume-btn" class="btn btn-primary" style="font-weight: bold;">▶ RESUME RUN</button>
+        <button id="pause-tutorial-btn" class="btn btn-secondary" style="border-color: #f0abfc; color: #f0abfc;">📖 HOW TO PLAY</button>
+        <button id="pause-quit-btn" class="btn btn-secondary" style="border-color: #ef4444; color: #ef4444;">🚪 QUIT TO MENU</button>
+      </div>
+    </div>
+
+    <!-- ============ QUIT CONFIRMATION ============ -->
+    <div id="quit-confirm-screen" class="overlay hidden" style="z-index: 60; background: rgba(10, 15, 30, 0.96);">
+      <div class="menu-bg-glow" style="background: radial-gradient(circle, rgba(239,68,68,0.15) 0%, rgba(0,0,0,0) 70%);"></div>
+      <h2 style="color: #ef4444; text-shadow: 0 0 10px rgba(239,68,68,0.5); font-size: 32px; margin-bottom: 8px; font-family: 'Rajdhani', sans-serif; font-weight: 700; text-align: center;">ABANDON RUN?</h2>
+      <p style="color: #94a3b8; font-size: 15px; margin-bottom: 24px; text-align: center; max-width: 280px; line-height: 1.5; margin-left: auto; margin-right: auto;">Are you sure you want to quit? You will lose all progress, credits, and cores collected in this run.</p>
+      
+      <div style="width: 90%; max-width: 320px; display: flex; flex-direction: column; gap: 16px; position: relative; margin-left: auto; margin-right: auto;">
+        <button id="quit-yes-btn" class="btn btn-primary" style="background: linear-gradient(135deg, #ef4444, #b91c1c); border-color: #ef4444; box-shadow: 0 0 20px rgba(239,68,68,0.4); font-weight: bold;">YES, ABANDON</button>
+        <button id="quit-no-btn" class="btn btn-secondary">NO, KEEP PLAYING</button>
       </div>
     </div>
 
