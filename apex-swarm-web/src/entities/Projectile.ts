@@ -60,7 +60,7 @@ export class Projectile {
             isCrit = true;
         }
 
-        const dmgDealt = Math.min(e.hp, finalDamage);
+        const dmgDealt = Math.max(0, Math.min(e.hp, finalDamage));
         e.hp -= finalDamage;
         this.isDead = true; // By default, die on first hit
         

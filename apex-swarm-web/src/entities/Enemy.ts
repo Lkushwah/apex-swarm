@@ -62,6 +62,7 @@ export class Enemy {
     public enemyType: EnemyType;
     public shape: string;
     public stunTimer: number = 0;
+    public attackCooldown: number = 0;
 
     // Shielder: orientation angle (the "front" of the shield)
     private shieldAngle: number = 0;
@@ -122,7 +123,7 @@ export class Enemy {
             amount *= 0.3;
         }
 
-        const dmgDealt = Math.min(this.hp, amount * this.damageReduction);
+        const dmgDealt = Math.max(0, Math.min(this.hp, amount * this.damageReduction));
         this.hp -= amount * this.damageReduction;
         return dmgDealt;
     }
@@ -133,6 +134,7 @@ export class Enemy {
         if (this.stunTimer > 0) {
             this.stunTimer -= dt;
         } else {
+            if (this.attackCooldown > 0) this.attackCooldown -= dt;
             const dx = player.x - this.x;
             const dy = player.y - this.y;
             const dist = Math.hypot(dx, dy);
@@ -175,8 +177,9 @@ export class Enemy {
             // Check collision with player
             const pDist = Math.hypot(p.x - player.x, p.y - player.y);
             if (pDist < player.radius + 4 && canTakeDamage) {
-                player.takeDamage(p.damage);
-                this.projectiles.splice(i, 1);
+                if (player.takeDamage(p.damage)) {
+                    this.projectiles.splice(i, 1);
+                }
             }
         }
     }
@@ -188,8 +191,13 @@ export class Enemy {
             this.y += (dy / dist) * this.speed * dt;
         }
         if (dist < this.radius + player.radius && canTakeDamage) {
-            player.takeDamage(this.damage);
-            this.isDead = true;
+            if (player.takeDamage(this.damage)) {
+                this.isDead = true;
+            } else {
+                // Bounce back if player has i-frames
+                this.x -= (dx / dist || 0) * 15;
+                this.y -= (dy / dist || 0) * 15;
+            }
         }
     }
 
@@ -199,10 +207,13 @@ export class Enemy {
             this.x += (dx / dist) * this.speed * dt;
             this.y += (dy / dist) * this.speed * dt;
         }
-        if (dist < this.radius + player.radius && canTakeDamage) {
-            player.takeDamage(this.damage);
-            // Brute doesn't die on contact, just deals damage with a cooldown
-            // Use speed slow as implicit cooldown
+        if (dist < this.radius + player.radius && canTakeDamage && this.attackCooldown <= 0) {
+            if (player.takeDamage(this.damage)) {
+                this.attackCooldown = 1.0;
+            } else {
+                this.x -= (dx / dist || 0) * 15;
+                this.y -= (dy / dist || 0) * 15;
+            }
         }
     }
 
@@ -237,8 +248,12 @@ export class Enemy {
 
         // Contact damage
         if (dist < this.radius + player.radius && canTakeDamage) {
-            player.takeDamage(this.damage * 0.5);
-            this.isDead = true;
+            if (player.takeDamage(this.damage * 0.5)) {
+                this.isDead = true;
+            } else {
+                this.x -= (dx / dist || 0) * 15;
+                this.y -= (dy / dist || 0) * 15;
+            }
         }
     }
 
@@ -267,8 +282,12 @@ export class Enemy {
         }
 
         if (dist < this.radius + player.radius && canTakeDamage) {
-            player.takeDamage(this.damage);
-            this.isDead = true;
+            if (player.takeDamage(this.damage)) {
+                this.isDead = true;
+            } else {
+                this.x -= (dx / dist || 0) * 15;
+                this.y -= (dy / dist || 0) * 15;
+            }
         }
     }
 
@@ -296,8 +315,12 @@ export class Enemy {
         }
 
         if (dist < this.radius + player.radius && canTakeDamage) {
-            player.takeDamage(this.damage);
-            this.isDead = true;
+            if (player.takeDamage(this.damage)) {
+                this.isDead = true;
+            } else {
+                this.x -= (dx / dist || 0) * 15;
+                this.y -= (dy / dist || 0) * 15;
+            }
         }
     }
 
@@ -328,8 +351,13 @@ export class Enemy {
             }
         }
 
-        if (dist < this.radius + player.radius && canTakeDamage) {
-            player.takeDamage(this.damage);
+        if (dist < this.radius + player.radius && canTakeDamage && this.attackCooldown <= 0) {
+            if (player.takeDamage(this.damage)) {
+                this.attackCooldown = 1.0;
+            } else {
+                this.x -= (dx / dist || 0) * 15;
+                this.y -= (dy / dist || 0) * 15;
+            }
         }
     }
 

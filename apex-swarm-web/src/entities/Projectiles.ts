@@ -59,7 +59,7 @@ export class MissileProjectile extends Projectile {
                     isCrit = true;
                 }
 
-                const dmgDealt = Math.min(other.hp, finalDamage);
+                const dmgDealt = Math.max(0, Math.min(other.hp, finalDamage));
                 other.hp -= finalDamage;
 
                 const totalLifesteal = (apexSystem?.lifesteal ?? 0) + player.globalLifesteal;
@@ -134,7 +134,7 @@ export class PlasmaOrbProjectile extends Projectile {
             const dist = Math.hypot(this.x - e.x, this.y - e.y);
             if (dist < this.radius + e.radius) {
                 const d = this.damage * dt * 5;
-                const dmgDealt = Math.min(e.hp, d);
+                const dmgDealt = Math.max(0, Math.min(e.hp, d));
                 e.hp -= d;
 
                 const totalLifesteal = (apexSystem?.lifesteal ?? 0) + player.globalLifesteal;
@@ -184,7 +184,7 @@ export class ChainLightningProjectile extends Projectile {
             isCrit = true;
         }
 
-        const dmgDealt = Math.min(e.hp, currentDamage);
+        const dmgDealt = Math.max(0, Math.min(e.hp, currentDamage));
         e.hp -= currentDamage;
 
         const totalLifesteal = (apexSystem?.lifesteal ?? 0) + player.globalLifesteal;
@@ -297,7 +297,7 @@ export class ScytheArcProjectile extends Projectile {
                     isCrit = true;
                 }
 
-                const dmgDealt = Math.min(e.hp, d);
+                const dmgDealt = Math.max(0, Math.min(e.hp, d));
                 e.hp -= d;
                 
                 // Melee lifesteal from passive + global + apex
@@ -384,7 +384,7 @@ export class RailgunBeam extends Projectile {
                     isCrit = true;
                 }
 
-                const dmgDealt = Math.min(e.hp, finalDamage);
+                const dmgDealt = Math.max(0, Math.min(e.hp, finalDamage));
                 e.hp -= finalDamage;
 
                 const totalLifesteal = (apexSystem?.lifesteal ?? 0) + player.globalLifesteal;
@@ -456,7 +456,7 @@ export class SingularityRing extends Projectile {
 
                 // Continuous damage
                 const d = this.damage * dt;
-                const dmgDealt = Math.min(e.hp, d);
+                const dmgDealt = Math.max(0, Math.min(e.hp, d));
                 e.hp -= d;
 
                 const totalLifesteal = (apexSystem?.lifesteal ?? 0) + player.globalLifesteal;
@@ -521,7 +521,7 @@ export class StormFrontPulse extends Projectile {
                     isCrit = true;
                 }
 
-                const dmgDealt = Math.min(e.hp, finalDamage);
+                const dmgDealt = Math.max(0, Math.min(e.hp, finalDamage));
                 e.hp -= finalDamage;
 
                 const totalLifesteal = (apexSystem?.lifesteal ?? 0) + player.globalLifesteal;
@@ -592,7 +592,7 @@ export class RealityTearPulse extends Projectile {
                     isCrit = true;
                 }
 
-                const dmgDealt = Math.min(e.hp, finalDamage);
+                const dmgDealt = Math.max(0, Math.min(e.hp, finalDamage));
                 e.hp -= finalDamage;
 
                 // 100% lifesteal bonus for Reality Tear + normal lifesteal
@@ -653,7 +653,7 @@ export class HiveMindLaser extends Projectile {
 
         if (this.target && !this.target.isDead) {
             const d = this.damage * dt; // Continuous DPS
-            const dmgDealt = Math.min(this.target.hp, d);
+            const dmgDealt = Math.max(0, Math.min(this.target.hp, d));
             this.target.hp -= d;
 
             const totalLifesteal = (apexSystem?.lifesteal ?? 0) + player.globalLifesteal;

@@ -119,6 +119,38 @@ function applyPermanentUpgrades(p: Player) {
 function checkTutorials() {
     if (gameState !== 'PLAYING') return;
 
+    if (survivalTime > 1 && !tutorialManager.hasSeen('MOVEMENT_AND_DASH')) {
+        gameState = 'TUTORIAL';
+        tutorialManager.showTutorial('MOVEMENT_AND_DASH', () => {
+            gameState = 'PLAYING';
+        });
+        return;
+    }
+
+    if (survivalTime > 5 && collectibles.some(c => c.type === 'xp') && !tutorialManager.hasSeen('COLLECTING_XP')) {
+        gameState = 'TUTORIAL';
+        tutorialManager.showTutorial('COLLECTING_XP', () => {
+            gameState = 'PLAYING';
+        });
+        return;
+    }
+
+    if (player && player.level > 1 && !tutorialManager.hasSeen('LEVELING_UP')) {
+        gameState = 'TUTORIAL';
+        tutorialManager.showTutorial('LEVELING_UP', () => {
+            gameState = 'PLAYING';
+        });
+        return;
+    }
+
+    if (creditsEarnedThisRun > 0 && !tutorialManager.hasSeen('CREDITS_AND_CORES')) {
+        gameState = 'TUTORIAL';
+        tutorialManager.showTutorial('CREDITS_AND_CORES', () => {
+            gameState = 'PLAYING';
+        });
+        return;
+    }
+
     if (apexSystem && apexSystem.canTrigger() && !tutorialManager.hasSeen('APEX_METER')) {
         gameState = 'TUTORIAL';
         tutorialManager.showTutorial('APEX_METER', () => {
@@ -315,16 +347,20 @@ document.getElementById('go-upgrades-btn')!.addEventListener('click', () => {
 });
 document.getElementById('apex-trigger-btn')!.addEventListener('click', () => {
     if (gameState === 'PLAYING') {
-        apexSystem.manualTrigger();
-        if (analyticsLogger) analyticsLogger.logEvent('APEX_TRIGGERED', { type: 'manual' }, survivalTime);
+        if (apexSystem.canTrigger()) {
+            apexSystem.manualTrigger();
+            if (analyticsLogger) analyticsLogger.logEvent('APEX_TRIGGERED', { type: 'manual' }, survivalTime);
+        }
     }
 });
 window.addEventListener('keydown', (e) => {
     if (gameState !== 'PLAYING') return;
     if (e.code === 'Space') {
         e.preventDefault();
-        apexSystem.manualTrigger();
-        if (analyticsLogger) analyticsLogger.logEvent('APEX_TRIGGERED', { type: 'manual' }, survivalTime);
+        if (apexSystem.canTrigger()) {
+            apexSystem.manualTrigger();
+            if (analyticsLogger) analyticsLogger.logEvent('APEX_TRIGGERED', { type: 'manual' }, survivalTime);
+        }
     } else if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
         e.preventDefault();
         player.dash(inputManager.getPointerPosition());
@@ -338,8 +374,10 @@ window.addEventListener('pointerup', (e) => {
     
     const now = performance.now();
     if (now - lastTapTime < 300) {
-        apexSystem.manualTrigger();
-        if (analyticsLogger) analyticsLogger.logEvent('APEX_TRIGGERED', { type: 'manual' }, survivalTime);
+        if (apexSystem.canTrigger()) {
+            apexSystem.manualTrigger();
+            if (analyticsLogger) analyticsLogger.logEvent('APEX_TRIGGERED', { type: 'manual' }, survivalTime);
+        }
     }
     lastTapTime = now;
 });
@@ -369,7 +407,7 @@ const gameLoop = new GameLoop(
             if (Math.random() < 0.3) {
                 createApexShards(apexShards, player.x + (Math.random() - 0.5) * 40, player.y + (Math.random() - 0.5) * 40, 1);
             }
-        } else if (apexSystem.getState() === 'SPENT') {
+        } else {
             uiManager.hideApexBanner();
         }
 
