@@ -41,6 +41,7 @@ describe('WaveManager Unit Tests', () => {
     });
 
     it('should unlock glitch_swarm at 540 seconds and spawn as a cluster of 5', () => {
+        (wm as any).bossMilestones = []; // Disable boss spawn check for this test
         wm.survivalTime = 540;
         
         const originalRandom = Math.random;

@@ -27,6 +27,8 @@ describe('Player Entity Unit Tests', () => {
         player.takeDamage(20); // 20 - 5 = 15 damage
         expect(player.hp).toBe(85);
 
+        player.invincibilityTimer = 0; // Reset i-frames from first hit
+
         player.takeDamage(2); // 2 - 5 = -3, minimum 1 damage
         expect(player.hp).toBe(84);
     });

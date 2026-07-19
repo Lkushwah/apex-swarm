@@ -439,16 +439,7 @@ const gameLoop = new GameLoop(
         survivalTime = waveManager.survivalTime;
         const effectiveDamageBonus = apexSystem.damageMultiplierBonus;
         weaponSystem.apexDamageBonus = effectiveDamageBonus;
-        weaponSystem.update(scaledDt, enemies, projectiles);
-
-        checkTutorials();
-
-        // Player
-        const canTakeDamage = !apexSystem.isInvincible;
-        player.update(scaledDt, inputManager.getPointerPosition(), bounds);
-        analyticsLogger.updateStats(survivalTime, player.x, player.y, player.hp, player.level, totalKills);
-
-        // Boss Handling
+        // Boss Handling (Check spawns before weapons target)
         if (waveManager.activeBoss !== currentBoss) {
             if (waveManager.activeBoss) {
                 // Boss just spawned -> Arena Lock!
@@ -466,7 +457,6 @@ const gameLoop = new GameLoop(
                 if (Math.random() > 0.5) {
                     player.level += 3;
                     floatingTexts.push(new FloatingText(currentBoss.x, currentBoss.y, `+3 LEVELS!`, '#4ade80', 1.0));
-                    // Trigger level up UI for 3 times (simplified: just one big level up screen)
                     gameState = 'LEVELUP';
                     levelUpUI.show(player);
                 } else {
@@ -478,6 +468,17 @@ const gameLoop = new GameLoop(
                 currentBoss = null;
             }
         }
+
+        const targets = currentBoss && !currentBoss.isDead ? [...enemies, currentBoss as any] : enemies;
+
+        weaponSystem.update(scaledDt, targets, projectiles);
+
+        checkTutorials();
+
+        // Player
+        const canTakeDamage = !apexSystem.isInvincible;
+        player.update(scaledDt, inputManager.getPointerPosition(), bounds);
+        analyticsLogger.updateStats(survivalTime, player.x, player.y, player.hp, player.level, totalKills);
 
         if (currentBoss) {
             currentBoss.update(scaledDt, player, canTakeDamage);
@@ -492,7 +493,7 @@ const gameLoop = new GameLoop(
         // Projectiles
         for (let i = projectiles.length - 1; i >= 0; i--) {
             const p = projectiles[i];
-            p.update(scaledDt, bounds, enemies, apexSystem, player);
+            p.update(scaledDt, bounds, targets, apexSystem, player);
             if (p.isDead) { projectiles.splice(i, 1); }
         }
 
