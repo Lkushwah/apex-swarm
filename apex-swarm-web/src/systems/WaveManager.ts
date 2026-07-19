@@ -18,23 +18,24 @@ export class WaveManager {
 
     public activeBoss: Boss | null = null;
     private bossMilestones = [
-        { time: 300, type: 'core_sentinel' as BossType, spawned: false }, // 5 mins
-        { time: 600, type: 'apex_predator' as BossType, spawned: false }  // 10 mins
+        { level: 5, type: 'core_sentinel' as BossType, spawned: false }, 
+        { level: 10, type: 'apex_predator' as BossType, spawned: false }
     ];
 
     constructor(bounds: { width: number, height: number }) {
         this.bounds = bounds;
     }
 
-    public update(dt: number, enemies: Enemy[]) {
+    public update(dt: number, enemies: Enemy[], currentLevel: number) {
         this.survivalTime += dt;
 
         if (!this.activeBoss) {
             for (const milestone of this.bossMilestones) {
-                if (!milestone.spawned && this.survivalTime >= milestone.time) {
+                if (!milestone.spawned && currentLevel >= milestone.level) {
                     milestone.spawned = true;
                     const timeScale = 1 + (this.survivalTime / 60);
-                    this.activeBoss = new Boss(this.bounds.width / 2, -50, milestone.type, timeScale);
+                    // Spawn at top edge so it's visible immediately
+                    this.activeBoss = new Boss(this.bounds.width / 2, 50, milestone.type, timeScale);
                     return;
                 }
             }

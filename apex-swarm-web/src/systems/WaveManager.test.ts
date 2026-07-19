@@ -15,14 +15,14 @@ describe('WaveManager Unit Tests', () => {
         expect(wm.survivalTime).toBe(0);
         
         // Update exactly the spawn timer amount (initially 0, spawns immediately)
-        wm.update(0.1, enemies);
+        wm.update(0.1, enemies, 1);
         expect(enemies.length).toBeGreaterThan(0);
         expect(enemies[0].enemyType).toBe('swarmer'); // Only swarmer unlocked at t=0
         
         const initialEnemyCount = enemies.length;
 
         // Advance by 1 second. With base spawn rate 1.0, it should spawn 1 more.
-        wm.update(1.0, enemies);
+        wm.update(1.0, enemies, 1);
         expect(enemies.length).toBeGreaterThan(initialEnemyCount);
     });
 
@@ -34,7 +34,7 @@ describe('WaveManager Unit Tests', () => {
         const originalRandom = Math.random;
         Math.random = () => 0.99; // Roll will pick the last element in weight array
         
-        wm.update(0.1, enemies); // Force spawn
+        wm.update(0.1, enemies, 1); // Force spawn
         expect(enemies[enemies.length - 1].enemyType).toBe('brute');
         
         Math.random = originalRandom;
@@ -48,7 +48,7 @@ describe('WaveManager Unit Tests', () => {
         Math.random = () => 0.99; // Pick glitch_swarm
         
         const beforeCount = enemies.length;
-        wm.update(0.1, enemies); // Force spawn
+        wm.update(0.1, enemies, 1); // Force spawn
         
         // Glitch swarm spawns 5 at once
         expect(enemies.length - beforeCount).toBe(5);
@@ -60,7 +60,7 @@ describe('WaveManager Unit Tests', () => {
     it('timeScale multiplier should be applied to spawned enemies', () => {
         wm.survivalTime = 120; // Time scale = 1 + (120/60) = 3
         
-        wm.update(0.1, enemies); // Force spawn
+        wm.update(0.1, enemies, 1); // Force spawn
         const e = enemies[enemies.length - 1];
         
         // Base swarmer HP is 30, scaled by 3 = 90

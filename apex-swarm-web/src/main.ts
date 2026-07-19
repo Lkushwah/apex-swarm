@@ -388,7 +388,9 @@ window.addEventListener('keydown', (e) => {
     } else if (e.code === 'KeyB' && gameState === 'PLAYING') {
         // Debug: spawn boss instantly
         if (!currentBoss && waveManager) {
-            waveManager.survivalTime = Math.max(waveManager.survivalTime, 300);
+            // Force boss spawn
+            const timeScale = 1 + (waveManager.survivalTime / 60);
+            waveManager.activeBoss = new Boss(800 / 2, 50, 'core_sentinel', timeScale);
         }
     }
 });
@@ -440,7 +442,7 @@ const gameLoop = new GameLoop(
         const bounds = renderer.getDimensions();
 
         // Wave & weapons (with effective damage multiplier including APEX bonus)
-        waveManager.update(scaledDt, enemies);
+        waveManager.update(scaledDt, enemies, player.level);
         survivalTime = waveManager.survivalTime;
         const effectiveDamageBonus = apexSystem.damageMultiplierBonus;
         weaponSystem.apexDamageBonus = effectiveDamageBonus;
