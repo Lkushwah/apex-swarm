@@ -109,15 +109,15 @@ Legend: ✅ Implemented | 🔧 In Progress | ❌ Not Started | ⚠️ Partial/Bu
 
 | Feature | File(s) | Status | Notes |
 |---|---|---|---|
-| Boss entity (compound shapes, HP bar) | — | ❌ | Phase 5 |
-| BossSystem (checkpoint scheduling) | — | ❌ | Phase 5 |
-| Bulwark Prime boss | — | ❌ | Phase 5 |
-| Glitchmother boss | — | ❌ | Phase 5 |
-| Railwraith boss (stretch) | — | ❌ | Phase 5 |
-| Apex Mirror boss (stretch) | — | ❌ | Phase 5 |
-| Telegraph warning (3s) | — | ❌ | Phase 5 |
-| Arena lock (pause spawns) | — | ❌ | Phase 5 |
-| Boss reward drops (chest) | — | ❌ | Phase 5 |
+| Boss entity (compound shapes, HP bar) | `entities/Boss.ts` | ✅ | Phase 5 |
+| BossSystem (checkpoint scheduling) | `systems/WaveManager.ts` | ✅ | Handled within WaveManager |
+| Bulwark Prime boss | `entities/Boss.ts` | ✅ | 'Core Sentinel' implemented |
+| Glitchmother boss | `entities/Boss.ts` | ✅ | 'Apex Predator' implemented |
+| Railwraith boss (stretch) | — | ❌ | Deferred |
+| Apex Mirror boss (stretch) | — | ❌ | Deferred |
+| Telegraph warning (3s) | `ui/UIManager.ts` | ✅ | Warning flash added |
+| Arena lock (pause spawns) | `main.ts` | ✅ | Normal spawns cleared + paused |
+| Boss reward drops (chest) | `main.ts` | ✅ | 3 Level Ups OR Credit/Core bounty |
 
 ---
 
@@ -275,7 +275,7 @@ Legend: ✅ Implemented | 🔧 In Progress | ❌ Not Started | ⚠️ Partial/Bu
 | **Phase 3** | Particles, floating text, visual feedback | ✅ |
 | **Testing** | Comprehensive unit test suite for Phase 1-3 features via Vitest | ✅ |
 | **Phase 4** | Weapon evolution effects, Drone entity, cosmetics, daily systems | ✅ |
-| **Phase 5** | Boss system, boss entities, retention, monetization | ❌ |
+| **Phase 5** | Boss system, boss entities, retention, monetization | ✅ |
 | **Phase 6** | Firebase Leaderboards, Auth, Cloud Saves, Realtime Analytics | ✅ |
 
 ## Pre-Deployment Checklist (Important Reversions)
