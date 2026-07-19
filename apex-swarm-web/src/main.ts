@@ -6,6 +6,7 @@ import { InputManager } from './engine/InputManager';
 
 import { Player } from './entities/Player';
 import { Enemy } from './entities/Enemy';
+import { Boss } from './entities/Boss';
 import { Projectile } from './entities/Projectile';
 import { Collectible } from './entities/Collectible';
 import { Particle, FloatingText, ApexShard, createParticles, createApexShards } from './entities/Particles';
@@ -23,6 +24,7 @@ import { NamePromptUI } from './ui/NamePromptUI';
 import { LeaderboardUI } from './ui/LeaderboardUI';
 import { TutorialUI } from './ui/TutorialUI';
 import { AchievementsUI } from './ui/AchievementsUI';
+import { FeedbackUI } from './ui/FeedbackUI';
 import { TutorialManager } from './systems/TutorialManager';
 import { PRNG } from './core/PRNG';
 import { AnalyticsLogger } from './core/AnalyticsLogger';
@@ -46,6 +48,7 @@ const uiManager = new UIManager();
 let namePromptUI: NamePromptUI;
 let tutorialUI: TutorialUI;
 let achievementsUI: AchievementsUI;
+let feedbackUI: FeedbackUI;
 let tutorialManager: TutorialManager;
 
 // ---- Game State ----
@@ -80,6 +83,7 @@ leaderboardUI.onBack = () => uiManager.showMainMenu();
 namePromptUI = new NamePromptUI(saveManager);
 tutorialUI = new TutorialUI();
 achievementsUI = new AchievementsUI(saveManager);
+feedbackUI = new FeedbackUI();
 tutorialManager = new TutorialManager(tutorialUI);
 let namePromptTarget: 'START_GAME' | 'LEADERBOARD' | null = null;
 
@@ -342,6 +346,10 @@ document.getElementById('power-upgrades-btn')!.addEventListener('click', () => {
 });
 document.getElementById('cosmetics-btn')?.addEventListener('click', () => cosmeticsUI.show());
 document.getElementById('achievements-btn')?.addEventListener('click', () => achievementsUI.show());
+document.getElementById('feedback-btn')?.addEventListener('click', () => {
+    document.getElementById('main-menu')?.classList.add('hidden');
+    feedbackUI.show();
+});
 document.getElementById('cosmetics-btn')!.addEventListener('click', () => {
     document.getElementById('main-menu')?.classList.add('hidden');
     cosmeticsUI.show();

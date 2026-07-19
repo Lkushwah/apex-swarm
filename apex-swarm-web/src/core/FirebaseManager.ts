@@ -110,6 +110,23 @@ export class FirebaseManager {
         }
     }
 
+    public async saveFeedback(feedbackText: string, rating: number, contactInfo: string): Promise<boolean> {
+        try {
+            const feedbackRef = collection(db, 'feedback');
+            await addDoc(feedbackRef, {
+                uid: this.currentUser?.uid || 'anonymous',
+                feedback: feedbackText,
+                rating: rating,
+                contact: contactInfo,
+                timestamp: serverTimestamp()
+            });
+            return true;
+        } catch (error) {
+            console.error("Error saving feedback to Firebase", error);
+            return false;
+        }
+    }
+
     public async getLeaderboard(metric: 'survivalTime' | 'totalKills'): Promise<LeaderboardEntry[]> {
         try {
             const usersRef = collection(db, 'users');
