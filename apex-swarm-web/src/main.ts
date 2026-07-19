@@ -385,6 +385,11 @@ window.addEventListener('keydown', (e) => {
     } else if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
         e.preventDefault();
         player.dash(inputManager.getPointerPosition());
+    } else if (e.code === 'KeyB' && gameState === 'PLAYING') {
+        // Debug: spawn boss instantly
+        if (!currentBoss && waveManager) {
+            waveManager.survivalTime = Math.max(waveManager.survivalTime, 300);
+        }
     }
 });
 
@@ -446,8 +451,10 @@ const gameLoop = new GameLoop(
                 currentBoss = waveManager.activeBoss;
                 uiManager.showBossWarning();
                 
-                // Despawn all regular enemies immediately (turn them into XP/particles)
-                enemies.forEach(e => e.hp = 0);
+                // Arena Lock! Flee all regular enemies
+                enemies.forEach(e => {
+                    e.isFleeing = true;
+                });
             } else if (currentBoss && currentBoss.isDead) {
                 // Boss just died -> Give Rewards
                 createParticles(particles, currentBoss.x, currentBoss.y, currentBoss.color, 100);
@@ -511,28 +518,32 @@ const gameLoop = new GameLoop(
             // Check if killed by a projectile this frame
             if (e.hp <= 0 && !e.isDead) {
                 e.isDead = true;
-                apexSystem.addKill(); // fill meter
-                totalKills++;
-                
-                // Death particles
-                createParticles(particles, e.x, e.y, e.color, 8);
+                if (!e.isFleeing) {
+                    apexSystem.addKill(); // fill meter
+                    totalKills++;
+                    
+                    // Death particles
+                    createParticles(particles, e.x, e.y, e.color, 8);
 
-                if (Math.random() > 0.5) collectibles.push(new Collectible(e.x, e.y, 'xp'));
-                if (Math.random() < 0.1) collectibles.push(new Collectible(e.x, e.y, 'credit'));
-                if (Math.random() < 0.02) collectibles.push(new Collectible(e.x, e.y, 'core'));
+                    if (Math.random() > 0.5) collectibles.push(new Collectible(e.x, e.y, 'xp'));
+                    if (Math.random() < 0.1) collectibles.push(new Collectible(e.x, e.y, 'credit'));
+                    if (Math.random() < 0.02) collectibles.push(new Collectible(e.x, e.y, 'core'));
+                }
                 enemies.splice(i, 1);
                 continue;
             }
             
             e.update(scaledDt, player, canTakeDamage);
             if (e.isDead) {
-                // Self-destruct enemies (swarmer contact, etc.)
-                createParticles(particles, e.x, e.y, e.color, 5);
-                apexSystem.addKill();
-                totalKills++;
-                if (Math.random() > 0.5) collectibles.push(new Collectible(e.x, e.y, 'xp'));
-                if (Math.random() < 0.1) collectibles.push(new Collectible(e.x, e.y, 'credit'));
-                if (Math.random() < 0.02) collectibles.push(new Collectible(e.x, e.y, 'core'));
+                if (!e.isFleeing) {
+                    // Self-destruct enemies (swarmer contact, etc.)
+                    createParticles(particles, e.x, e.y, e.color, 5);
+                    apexSystem.addKill();
+                    totalKills++;
+                    if (Math.random() > 0.5) collectibles.push(new Collectible(e.x, e.y, 'xp'));
+                    if (Math.random() < 0.1) collectibles.push(new Collectible(e.x, e.y, 'credit'));
+                    if (Math.random() < 0.02) collectibles.push(new Collectible(e.x, e.y, 'core'));
+                }
                 enemies.splice(i, 1);
             }
         }

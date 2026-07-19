@@ -63,6 +63,7 @@ export class Enemy {
     public shape: string;
     public stunTimer: number = 0;
     public attackCooldown: number = 0;
+    public isFleeing: boolean = false;
 
     // Shielder: orientation angle (the "front" of the shield)
     private shieldAngle: number = 0;
@@ -130,6 +131,22 @@ export class Enemy {
 
     public update(dt: number, player: Player, canTakeDamage: boolean = true) {
         if (this.isDead) return;
+
+        if (this.isFleeing) {
+            const dx = this.x - player.x;
+            const dy = this.y - player.y;
+            const dist = Math.hypot(dx, dy) || 1;
+            
+            // Flee at triple speed
+            this.x += (dx / dist) * this.speed * 3 * dt;
+            this.y += (dy / dist) * this.speed * 3 * dt;
+            
+            // Despawn if far enough away (approx 1500px from center)
+            if (this.x < -500 || this.x > 2500 || this.y < -500 || this.y > 2500) {
+                this.isDead = true;
+            }
+            return; // Skip normal AI and shooting
+        }
 
         if (this.stunTimer > 0) {
             this.stunTimer -= dt;
