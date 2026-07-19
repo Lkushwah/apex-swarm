@@ -65,8 +65,8 @@ describe('WaveManager Unit Tests', () => {
         
         // Base swarmer HP is 30, scaled by 3 = 90
         // If it picked brute (base 150), scaled by 3 = 450
-        // We just verify it matches the config multiplied by 3
-        const expectedHp = ENEMY_CONFIGS[e.enemyType].baseHp * (1 + 120.1 / 60);
+        // Use the new getTimeScale() helper to verify expectedHp scaling
+        const expectedHp = ENEMY_CONFIGS[e.enemyType].baseHp * wm.getTimeScale();
         expect(e.maxHp).toBeCloseTo(expectedHp);
     });
 });

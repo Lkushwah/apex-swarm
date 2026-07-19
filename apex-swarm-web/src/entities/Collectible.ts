@@ -19,7 +19,7 @@ export class Collectible {
         if (this.type === 'xp') {
             this.color = '#4ade80';
             this.radius = 4;
-            this.xpValue = 35;
+            this.xpValue = 40;
         } else if (this.type === 'credit') {
             this.color = '#fbbf24';
             this.radius = 3;

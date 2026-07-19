@@ -70,7 +70,7 @@ describe('Player Entity Unit Tests', () => {
         expect(leveledUp2).toBe(true);
         expect(player.level).toBe(2);
         expect(player.xp).toBe(10); 
-        expect(player.xpToNext).toBe(150); 
+        expect(player.xpToNext).toBe(135); 
     });
 
     it('should move towards target position normally', () => {

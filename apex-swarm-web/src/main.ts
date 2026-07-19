@@ -105,12 +105,22 @@ namePromptUI.onSkip = () => {
     }
 };
 
+let pendingLevelUps = 0;
+
 const levelUpUI = new LevelUpUI((selection) => {
-    gameState = 'PLAYING';
     if (selection && analyticsLogger) {
         analyticsLogger.logEvent(selection.type as any, { id: selection.id, level: selection.level }, survivalTime);
     }
     checkTutorials();
+
+    if (pendingLevelUps > 0) {
+        pendingLevelUps--;
+        player.level++;
+        player.xpToNext = Math.floor(player.xpToNext * 1.35);
+        levelUpUI.show(player);
+    } else {
+        gameState = 'PLAYING';
+    }
 });
 
 // ---- Permanent Upgrades Application ----
@@ -473,9 +483,12 @@ window.addEventListener('keydown', (e) => {
     } else if (e.code === 'KeyB' && gameState === 'PLAYING') {
         // Debug: spawn boss instantly
         if (!currentBoss && waveManager) {
-            // Force boss spawn
-            const timeScale = 1 + (waveManager.survivalTime / 60);
-            waveManager.activeBoss = new Boss(800 / 2, 50, 'core_sentinel', timeScale);
+            // Force random boss spawn
+            const timeScale = waveManager.getTimeScale();
+            const types: ('core_sentinel' | 'void_weaver' | 'swarm_hive' | 'chrono_wraith' | 'apex_predator')[] = 
+                ['core_sentinel', 'void_weaver', 'swarm_hive', 'chrono_wraith', 'apex_predator'];
+            const randomType = types[Math.floor(Math.random() * types.length)];
+            waveManager.activeBoss = new Boss(renderer.getDimensions().width / 2, 50, randomType, timeScale);
         }
     }
 });
@@ -547,16 +560,34 @@ const gameLoop = new GameLoop(
                 createParticles(particles, currentBoss.x, currentBoss.y, currentBoss.color, 100);
                 uiManager.hideBossUI();
                 
-                // Random Boss Reward: 3 Level Ups OR 500 Credits/50 Cores
-                if (Math.random() > 0.5) {
-                    player.level += 3;
-                    floatingTexts.push(new FloatingText(currentBoss.x, currentBoss.y, `+3 LEVELS!`, '#4ade80', 1.0));
+                // Retrieve rewards from boss definition
+                const levelsReward = currentBoss.rewardLevelUps;
+                const creditsReward = currentBoss.rewardCredits;
+                const coresReward = currentBoss.rewardCores;
+                
+                creditsEarnedThisRun += creditsReward;
+                coresEarnedThisRun += coresReward;
+                
+                if (currentBoss.rewardHealFull) {
+                    player.hp = player.maxHp;
+                    floatingTexts.push(new FloatingText(player.x, player.y, `FULL HEAL!`, '#22c55e', 1.2));
+                }
+                if (currentBoss.rewardApexRefill) {
+                    apexSystem.meter = apexSystem.MAX_METER;
+                    floatingTexts.push(new FloatingText(player.x, player.y, `APEX READY!`, '#f43f5e', 1.2));
+                }
+
+                floatingTexts.push(new FloatingText(currentBoss.x, currentBoss.y, `+${creditsReward} CREDITS!`, '#fbbf24', 1.0));
+                if (coresReward > 0) {
+                    floatingTexts.push(new FloatingText(currentBoss.x, currentBoss.y - 20, `+${coresReward} CORES!`, '#f0abfc', 1.0));
+                }
+
+                if (levelsReward > 0) {
+                    pendingLevelUps = levelsReward - 1; // The first one is shown now, rest are pending
+                    player.level++;
+                    player.xpToNext = Math.floor(player.xpToNext * 1.35);
                     gameState = 'LEVELUP';
                     levelUpUI.show(player);
-                } else {
-                    creditsEarnedThisRun += 500;
-                    coresEarnedThisRun += 50;
-                    floatingTexts.push(new FloatingText(currentBoss.x, currentBoss.y, `+500 CREDITS!`, '#fbbf24', 1.0));
                 }
                 
                 currentBoss = null;
@@ -577,6 +608,14 @@ const gameLoop = new GameLoop(
         if (currentBoss) {
             currentBoss.update(scaledDt, player, canTakeDamage);
             uiManager.updateBossHP(currentBoss.name, currentBoss.hp, currentBoss.maxHp);
+            
+            // Process boss-summoned minion spawns
+            if (currentBoss.minionQueue && currentBoss.minionQueue.length > 0) {
+                for (const req of currentBoss.minionQueue) {
+                    waveManager.spawnMinions(enemies, req.type, req.count, req.x, req.y);
+                }
+                currentBoss.minionQueue = [];
+            }
             
             // Check if killed by a projectile this frame
             if (currentBoss.hp <= 0 && !currentBoss.isDead) {
@@ -612,9 +651,14 @@ const gameLoop = new GameLoop(
                     // Death particles
                     createParticles(particles, e.x, e.y, e.color, 8);
 
-                    if (Math.random() > 0.5) collectibles.push(new Collectible(e.x, e.y, 'xp'));
-                    if (Math.random() < 0.1) collectibles.push(new Collectible(e.x, e.y, 'credit'));
-                    if (Math.random() < 0.02) collectibles.push(new Collectible(e.x, e.y, 'core'));
+                    if (!(e as any).isBossMinion) {
+                        if (Math.random() > 0.5) collectibles.push(new Collectible(e.x, e.y, 'xp'));
+                        if (Math.random() < 0.1) collectibles.push(new Collectible(e.x, e.y, 'credit'));
+                        if (Math.random() < 0.02) collectibles.push(new Collectible(e.x, e.y, 'core'));
+                    } else {
+                        // Boss minions drop XP only (option C)
+                        if (Math.random() > 0.5) collectibles.push(new Collectible(e.x, e.y, 'xp'));
+                    }
                 }
                 enemies.splice(i, 1);
                 continue;
@@ -627,9 +671,14 @@ const gameLoop = new GameLoop(
                     createParticles(particles, e.x, e.y, e.color, 5);
                     apexSystem.addKill();
                     totalKills++;
-                    if (Math.random() > 0.5) collectibles.push(new Collectible(e.x, e.y, 'xp'));
-                    if (Math.random() < 0.1) collectibles.push(new Collectible(e.x, e.y, 'credit'));
-                    if (Math.random() < 0.02) collectibles.push(new Collectible(e.x, e.y, 'core'));
+                    if (!(e as any).isBossMinion) {
+                        if (Math.random() > 0.5) collectibles.push(new Collectible(e.x, e.y, 'xp'));
+                        if (Math.random() < 0.1) collectibles.push(new Collectible(e.x, e.y, 'credit'));
+                        if (Math.random() < 0.02) collectibles.push(new Collectible(e.x, e.y, 'core'));
+                    } else {
+                        // Boss minions drop XP only (option C)
+                        if (Math.random() > 0.5) collectibles.push(new Collectible(e.x, e.y, 'xp'));
+                    }
                 }
                 enemies.splice(i, 1);
             }
@@ -722,7 +771,10 @@ const gameLoop = new GameLoop(
 
         collectibles.forEach(c => c.draw(ctx, waveManager?.survivalTime ?? 0));
         enemies.forEach(e => e.draw(ctx));
-        if (currentBoss && gameState !== 'GAMEOVER') currentBoss.draw(ctx);
+        if (currentBoss && gameState !== 'GAMEOVER') {
+            const dims = renderer.getDimensions();
+            currentBoss.draw(ctx, dims.width, dims.height);
+        }
         
         // Drones
         weaponSystem.drones.forEach(d => d.draw(ctx));

@@ -8,7 +8,7 @@ describe('Collectible Entity Unit Tests', () => {
         expect(c.x).toBe(100);
         expect(c.y).toBe(100);
         expect(c.type).toBe('xp');
-        expect(c.xpValue).toBe(35);
+        expect(c.xpValue).toBe(40);
         expect(c.isCollected).toBe(false);
         expect(c.color).toBe('#4ade80');
     });

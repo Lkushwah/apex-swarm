@@ -163,7 +163,7 @@ export class Player {
         if (this.xp >= this.xpToNext) {
             this.xp -= this.xpToNext;
             this.level++;
-            this.xpToNext = Math.floor(this.xpToNext * 1.5);
+            this.xpToNext = Math.floor(this.xpToNext * 1.35);
             return true; // Leveled up
         }
         return false;

@@ -10,6 +10,8 @@ interface SpawnWeight {
     weight: number;
 }
 
+const MAX_ACTIVE_ENEMIES = 60; // Spawn cap to prevent lag/visual noise
+
 export class WaveManager {
     public survivalTime: number = 0;
     private spawnTimer: number = 0;
@@ -18,12 +20,25 @@ export class WaveManager {
 
     public activeBoss: Boss | null = null;
     private bossMilestones = [
-        { level: 5, type: 'core_sentinel' as BossType, spawned: false }, 
-        { level: 10, type: 'apex_predator' as BossType, spawned: false }
+        { level: 5, type: 'core_sentinel' as BossType, spawned: false },
+        { level: 10, type: 'void_weaver' as BossType, spawned: false },
+        { level: 15, type: 'swarm_hive' as BossType, spawned: false },
+        { level: 20, type: 'chrono_wraith' as BossType, spawned: false },
+        { level: 25, type: 'apex_predator' as BossType, spawned: false }
     ];
 
     constructor(bounds: { width: number, height: number }) {
         this.bounds = bounds;
+    }
+
+    /**
+     * Soft-exponential time scale: gentler early, ramps hard late.
+     * Old: 1 + (t / 60)
+     * New: 1 + (t / 90) + (t / 300)²
+     */
+    public getTimeScale(): number {
+        const t = this.survivalTime;
+        return 1 + (t / 90) + Math.pow(t / 300, 2);
     }
 
     public update(dt: number, enemies: Enemy[], currentLevel: number) {
@@ -33,7 +48,7 @@ export class WaveManager {
             for (const milestone of this.bossMilestones) {
                 if (!milestone.spawned && currentLevel >= milestone.level) {
                     milestone.spawned = true;
-                    const timeScale = 1 + (this.survivalTime / 60);
+                    const timeScale = this.getTimeScale();
                     // Spawn at top edge so it's visible immediately
                     this.activeBoss = new Boss(this.bounds.width / 2, 50, milestone.type, timeScale);
                     return;
@@ -49,13 +64,31 @@ export class WaveManager {
             }
         }
 
+        // Enforce spawn cap
+        if (enemies.length >= MAX_ACTIVE_ENEMIES) return;
+
         this.spawnTimer -= dt;
 
         if (this.spawnTimer <= 0) {
             this.spawnEnemy(enemies);
-            // Cap minimum spawn rate at 0.1s
-            const currentSpawnRate = Math.max(0.1, this.baseSpawnRate - (this.survivalTime / 120));
+            // Cap minimum spawn rate at 0.15s, ramp over 4 minutes (was 0.1s over 2 min)
+            const currentSpawnRate = Math.max(0.15, this.baseSpawnRate - (this.survivalTime / 240));
             this.spawnTimer = currentSpawnRate;
+        }
+    }
+
+    /**
+     * Spawn minions for bosses (called from main.ts when boss queues minions).
+     * Boss minions only drop XP, not credits.
+     */
+    public spawnMinions(enemies: Enemy[], type: EnemyType, count: number, x: number, y: number) {
+        const timeScale = this.getTimeScale();
+        for (let i = 0; i < count; i++) {
+            const offsetX = (Math.random() - 0.5) * 60;
+            const offsetY = (Math.random() - 0.5) * 60;
+            const enemy = new Enemy(x + offsetX, y + offsetY, timeScale, type);
+            (enemy as any).isBossMinion = true; // Tag for loot filtering in main.ts
+            enemies.push(enemy);
         }
     }
 
@@ -116,7 +149,7 @@ export class WaveManager {
         let x = 0;
         let y = 0;
         const margin = 40;
-        
+
         const side = Math.floor(Math.random() * 4);
         if (side === 0) { x = Math.random() * this.bounds.width; y = -margin; }
         else if (side === 1) { x = this.bounds.width + margin; y = Math.random() * this.bounds.height; }
@@ -127,7 +160,7 @@ export class WaveManager {
     }
 
     private spawnEnemy(enemies: Enemy[]) {
-        const timeScale = 1 + (this.survivalTime / 60);
+        const timeScale = this.getTimeScale();
         const type = this.pickEnemyType();
         const pos = this.getSpawnPosition();
 

@@ -55,7 +55,7 @@ export class WeaponSystem {
         const dy = closest.y - this.player.y;
         const angle = Math.atan2(dy, dx);
         
-        const effectiveDamageMult = this.player.damageMultiplier + this.apexDamageBonus;
+        const effectiveDamageMult = Math.min(3.5, this.player.damageMultiplier) + this.apexDamageBonus;
         
         let baseRate = 0.5;
 
