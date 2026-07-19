@@ -109,15 +109,12 @@ Legend: ✅ Implemented | 🔧 In Progress | ❌ Not Started | ⚠️ Partial/Bu
 
 | Feature | File(s) | Status | Notes |
 |---|---|---|---|
-| Boss entity (compound shapes, HP bar) | `entities/Boss.ts` | ✅ | Phase 5 |
+| Boss entity (compound shapes, HP bar) | `entities/Boss.ts` | ✅ | Canvas-rendered boss HP bar with phase indicators |
 | BossSystem (checkpoint scheduling) | `systems/WaveManager.ts` | ✅ | Handled within WaveManager |
-| Bulwark Prime boss | `entities/Boss.ts` | ✅ | 'Core Sentinel' implemented |
-| Glitchmother boss | `entities/Boss.ts` | ✅ | 'Apex Predator' implemented |
-| Railwraith boss (stretch) | — | ❌ | Deferred |
-| Apex Mirror boss (stretch) | — | ❌ | Deferred |
-| Telegraph warning (3s) | `ui/UIManager.ts` | ✅ | Warning flash added |
-| Arena lock (pause spawns) | `main.ts` | ✅ | Normal spawns cleared + paused |
-| Boss reward drops (chest) | `main.ts` | ✅ | 3 Level Ups OR Credit/Core bounty |
+| Boss Roster (5 Bosses) | `entities/Boss.ts` | ✅ | Core Sentinel (L5), Void Weaver (L10), Swarm Hive (L15), Chrono Wraith (L20), Apex Predator (L25) |
+| Telegraph warning | `entities/Boss.ts` | ✅ | Warning telegraph rings show 0.5s before radial/targeted attacks |
+| Arena lock (pause spawns) | `main.ts` | ✅ | Normal spawns cleared + paused, active boss screen lock |
+| Boss reward drops (chest) | `main.ts` | ✅ | Scaling level-ups and credit/core bounty table per-boss, sequential drafts |
 
 ---
 
