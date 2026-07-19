@@ -22,6 +22,7 @@ import { DailyChallengeUI } from './ui/DailyChallengeUI';
 import { NamePromptUI } from './ui/NamePromptUI';
 import { LeaderboardUI } from './ui/LeaderboardUI';
 import { TutorialUI } from './ui/TutorialUI';
+import { AchievementsUI } from './ui/AchievementsUI';
 import { TutorialManager } from './systems/TutorialManager';
 import { PRNG } from './core/PRNG';
 import { AnalyticsLogger } from './core/AnalyticsLogger';
@@ -42,8 +43,10 @@ inputManager.onDoubleTap(() => {
 });
 const saveManager = new SaveManager();
 const uiManager = new UIManager();
-const tutorialUI = new TutorialUI();
-const tutorialManager = new TutorialManager(tutorialUI);
+let namePromptUI: NamePromptUI;
+let tutorialUI: TutorialUI;
+let achievementsUI: AchievementsUI;
+let tutorialManager: TutorialManager;
 
 // ---- Game State ----
 type GameState = 'MENU' | 'PLAYING' | 'LEVELUP' | 'GAMEOVER' | 'TUTORIAL';
@@ -60,6 +63,7 @@ let creditsEarnedThisRun: number = 0;
 let coresEarnedThisRun: number = 0;
 let totalKills: number = 0;
 let survivalTime: number = 0;
+let currentBoss: any = null;
 
 let weaponSystem: WeaponSystem;
 let waveManager: WaveManager;
@@ -73,7 +77,10 @@ const dailyChallengeUI = new DailyChallengeUI(saveManager, (seed, mods) => start
 const leaderboardUI = new LeaderboardUI();
 leaderboardUI.onBack = () => uiManager.showMainMenu();
 
-const namePromptUI = new NamePromptUI(saveManager);
+namePromptUI = new NamePromptUI(saveManager);
+tutorialUI = new TutorialUI();
+achievementsUI = new AchievementsUI(saveManager);
+tutorialManager = new TutorialManager(tutorialUI);
 let namePromptTarget: 'START_GAME' | 'LEADERBOARD' | null = null;
 
 namePromptUI.onNameSet = () => {
@@ -192,6 +199,7 @@ function startGame() {
     coresEarnedThisRun = 0;
     totalKills = 0;
     survivalTime = 0;
+    currentBoss = null;
 
     // Wire particle/text arrays into Projectile's static feedback system
     Projectile.floatingTexts = floatingTexts;
@@ -259,10 +267,21 @@ function startDailyRun(seed: number, modifiers: string[]) {
 
 function handleGameOver() {
     gameState = 'GAMEOVER';
+    
+    // Check Achievements
+    if (survivalTime >= 60 && !saveManager.hasAchievement('survive_1m')) saveManager.unlockAchievement('survive_1m');
+    if (survivalTime >= 300 && !saveManager.hasAchievement('survive_5m')) saveManager.unlockAchievement('survive_5m');
+    if (survivalTime >= 600 && !saveManager.hasAchievement('survive_10m')) saveManager.unlockAchievement('survive_10m');
+    if (player.level >= 10 && !saveManager.hasAchievement('level_10')) saveManager.unlockAchievement('level_10');
+    if (player.level >= 25 && !saveManager.hasAchievement('level_25')) saveManager.unlockAchievement('level_25');
+    if (totalKills >= 500 && !saveManager.hasAchievement('kill_500')) saveManager.unlockAchievement('kill_500');
+    if (totalKills >= 2000 && !saveManager.hasAchievement('kill_2000')) saveManager.unlockAchievement('kill_2000');
+
     saveManager.addCredits(Math.floor(creditsEarnedThisRun * (1 + player.creditMultiplier)));
     if ((saveManager as any).addCores) {
         (saveManager as any).addCores(coresEarnedThisRun);
     }
+    saveManager.updateStats(survivalTime, totalKills, player.level);
     
     const displayName = saveManager.getDisplayName();
     
@@ -321,6 +340,8 @@ document.getElementById('power-upgrades-btn')!.addEventListener('click', () => {
     document.getElementById('main-menu')?.classList.add('hidden');
     powerUpgradesUI.show();
 });
+document.getElementById('cosmetics-btn')?.addEventListener('click', () => cosmeticsUI.show());
+document.getElementById('achievements-btn')?.addEventListener('click', () => achievementsUI.show());
 document.getElementById('cosmetics-btn')!.addEventListener('click', () => {
     document.getElementById('main-menu')?.classList.add('hidden');
     cosmeticsUI.show();
@@ -426,6 +447,47 @@ const gameLoop = new GameLoop(
         const canTakeDamage = !apexSystem.isInvincible;
         player.update(scaledDt, inputManager.getPointerPosition(), bounds);
         analyticsLogger.updateStats(survivalTime, player.x, player.y, player.hp, player.level, totalKills);
+
+        // Boss Handling
+        if (waveManager.activeBoss !== currentBoss) {
+            if (waveManager.activeBoss) {
+                // Boss just spawned -> Arena Lock!
+                currentBoss = waveManager.activeBoss;
+                uiManager.showBossWarning();
+                
+                // Despawn all regular enemies immediately (turn them into XP/particles)
+                enemies.forEach(e => e.hp = 0);
+            } else if (currentBoss && currentBoss.isDead) {
+                // Boss just died -> Give Rewards
+                createParticles(particles, currentBoss.x, currentBoss.y, currentBoss.color, 100);
+                uiManager.hideBossUI();
+                
+                // Random Boss Reward: 3 Level Ups OR 500 Credits/50 Cores
+                if (Math.random() > 0.5) {
+                    player.level += 3;
+                    floatingTexts.push(new FloatingText(currentBoss.x, currentBoss.y, `+3 LEVELS!`, '#4ade80', 1.0));
+                    // Trigger level up UI for 3 times (simplified: just one big level up screen)
+                    gameState = 'LEVELUP';
+                    levelUpUI.show(player);
+                } else {
+                    creditsEarnedThisRun += 500;
+                    coresEarnedThisRun += 50;
+                    floatingTexts.push(new FloatingText(currentBoss.x, currentBoss.y, `+500 CREDITS!`, '#fbbf24', 1.0));
+                }
+                
+                currentBoss = null;
+            }
+        }
+
+        if (currentBoss) {
+            currentBoss.update(scaledDt, player, canTakeDamage);
+            uiManager.updateBossHP(currentBoss.name, currentBoss.hp, currentBoss.maxHp);
+            
+            // Check if killed by a projectile this frame
+            if (currentBoss.hp <= 0 && !currentBoss.isDead) {
+                currentBoss.isDead = true;
+            }
+        }
 
         // Projectiles
         for (let i = projectiles.length - 1; i >= 0; i--) {
@@ -561,6 +623,8 @@ const gameLoop = new GameLoop(
 
         collectibles.forEach(c => c.draw(ctx, waveManager?.survivalTime ?? 0));
         enemies.forEach(e => e.draw(ctx));
+        if (currentBoss && gameState !== 'GAMEOVER') currentBoss.draw(ctx);
+        
         // Drones
         weaponSystem.drones.forEach(d => d.draw(ctx));
 

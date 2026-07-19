@@ -11,6 +11,12 @@ export interface SaveData {
     dailyStreak: number;
     lastLoginDate: string | null;
     displayName: string | null;
+    
+    // Stats & Achievements
+    maxSurvivalTime: number;
+    maxKills: number;
+    maxLevel: number;
+    achievements: string[];
 }
 
 const SAVE_KEY = 'apex_swarm_save';
@@ -23,7 +29,11 @@ const DEFAULT_SAVE: SaveData = {
     equippedCosmetic: 'default',
     dailyStreak: 0,
     lastLoginDate: null,
-    displayName: null
+    displayName: null,
+    maxSurvivalTime: 0,
+    maxKills: 0,
+    maxLevel: 0,
+    achievements: []
 };
 
 export class SaveManager {
@@ -145,5 +155,37 @@ export class SaveManager {
         }
 
         return { isNewDay, streak: this.data.dailyStreak ?? 1 };
+    }
+
+    public updateStats(survivalTime: number, kills: number, level: number) {
+        if (!this.data.maxSurvivalTime) this.data.maxSurvivalTime = 0;
+        if (!this.data.maxKills) this.data.maxKills = 0;
+        if (!this.data.maxLevel) this.data.maxLevel = 0;
+        if (!this.data.achievements) this.data.achievements = [];
+
+        this.data.maxSurvivalTime = Math.max(this.data.maxSurvivalTime, survivalTime);
+        this.data.maxKills = Math.max(this.data.maxKills, kills);
+        this.data.maxLevel = Math.max(this.data.maxLevel, level);
+        this.save();
+    }
+
+    public getStats() {
+        return {
+            maxSurvivalTime: this.data.maxSurvivalTime || 0,
+            maxKills: this.data.maxKills || 0,
+            maxLevel: this.data.maxLevel || 0
+        };
+    }
+
+    public hasAchievement(id: string): boolean {
+        return this.data.achievements?.includes(id) ?? false;
+    }
+
+    public unlockAchievement(id: string) {
+        if (!this.data.achievements) this.data.achievements = [];
+        if (!this.data.achievements.includes(id)) {
+            this.data.achievements.push(id);
+            this.save();
+        }
     }
 }

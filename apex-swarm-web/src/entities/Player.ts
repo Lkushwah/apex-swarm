@@ -51,11 +51,16 @@ export class Player {
         this.y = y;
     }
 
+    public invincibilityTimer: number = 0;
+
     public update(dt: number, targetPos: { x: number, y: number }, bounds: { width: number, height: number }) {
         if (this.dashCooldownTimer > 0) this.dashCooldownTimer -= dt;
         if (this.dashDurationTimer > 0) {
             this.dashDurationTimer -= dt;
             this.isDashing = this.dashDurationTimer > 0;
+        }
+        if (this.invincibilityTimer > 0) {
+            this.invincibilityTimer -= dt;
         }
 
         const dx = targetPos.x - this.x;
@@ -105,6 +110,12 @@ export class Player {
         const pulse = isApex ? 0.5 + 0.5 * Math.sin(Date.now() / 80) : 0;
 
         ctx.globalAlpha = this.isDashing ? 0.5 : 1.0;
+        if (this.invincibilityTimer > 0 && !isApex) {
+            // Flicker if invincible
+            if (Math.floor(Date.now() / 50) % 2 === 0) {
+                ctx.globalAlpha = 0.3;
+            }
+        }
 
         if (isApex) {
             // Outer ring
@@ -133,10 +144,13 @@ export class Player {
     }
 
 
-    public takeDamage(amount: number) {
+    public takeDamage(amount: number): boolean {
+        if (this.invincibilityTimer > 0) return false;
         // Apply armor reduction — at least 1 damage always gets through
         const reduced = Math.max(1, amount - this.armor);
         this.hp -= reduced;
+        this.invincibilityTimer = 0.25; // 0.25 seconds of i-frames
+        return true;
     }
 
     public heal(amount: number) {

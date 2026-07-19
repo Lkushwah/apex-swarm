@@ -1,4 +1,5 @@
 import { Enemy, ENEMY_CONFIGS, type EnemyType } from '../entities/Enemy';
+import { Boss, type BossType } from '../entities/Boss';
 
 // -------------------------------------------------------
 // WaveManager — weighted spawn system per GDD §8.4
@@ -15,12 +16,38 @@ export class WaveManager {
     private baseSpawnRate: number = 1.0;
     private bounds: { width: number, height: number };
 
+    public activeBoss: Boss | null = null;
+    private bossMilestones = [
+        { time: 300, type: 'core_sentinel' as BossType, spawned: false }, // 5 mins
+        { time: 600, type: 'apex_predator' as BossType, spawned: false }  // 10 mins
+    ];
+
     constructor(bounds: { width: number, height: number }) {
         this.bounds = bounds;
     }
 
     public update(dt: number, enemies: Enemy[]) {
         this.survivalTime += dt;
+
+        if (!this.activeBoss) {
+            for (const milestone of this.bossMilestones) {
+                if (!milestone.spawned && this.survivalTime >= milestone.time) {
+                    milestone.spawned = true;
+                    const timeScale = 1 + (this.survivalTime / 60);
+                    this.activeBoss = new Boss(this.bounds.width / 2, -50, milestone.type, timeScale);
+                    return;
+                }
+            }
+        }
+
+        if (this.activeBoss) {
+            if (this.activeBoss.isDead) {
+                this.activeBoss = null;
+            } else {
+                return; // Pause regular spawns while boss is alive
+            }
+        }
+
         this.spawnTimer -= dt;
 
         if (this.spawnTimer <= 0) {

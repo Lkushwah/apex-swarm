@@ -1,6 +1,6 @@
 import { TutorialUI } from '../ui/TutorialUI';
 
-export type TutorialType = 'APEX_METER' | 'WEAPON_EVOLUTION' | 'DRONES';
+export type TutorialType = 'MOVEMENT_AND_DASH' | 'COLLECTING_XP' | 'LEVELING_UP' | 'CREDITS_AND_CORES' | 'APEX_METER' | 'WEAPON_EVOLUTION' | 'DRONES';
 
 export class TutorialManager {
     private ui: TutorialUI;
@@ -39,6 +39,30 @@ export class TutorialManager {
         this.ui.onDismiss = onDismiss;
 
         switch (type) {
+            case 'MOVEMENT_AND_DASH':
+                this.ui.show(
+                    'Welcome to Apex Swarm',
+                    'Move your <span style="color:#38bdf8; font-weight:bold;">Pointer or Finger</span> to navigate.<br/><br/>Your weapons <span style="color:#f59e0b; font-weight:bold;">fire automatically</span>.<br/><br/>Double tap or press <span style="color:#fbbf24;">SHIFT</span> to Dash and evade enemies!'
+                );
+                break;
+            case 'COLLECTING_XP':
+                this.ui.show(
+                    'Gather Power',
+                    'Defeated enemies drop <span style="color:#4ade80; font-weight:bold;">XP Gems</span>.<br/><br/>Collect them to level up and gain new Weapons and Passives!'
+                );
+                break;
+            case 'LEVELING_UP':
+                this.ui.show(
+                    'Level Up!',
+                    'You have leveled up! Choose an upgrade from the draft.<br/><br/>Try to find <span style="color:#f59e0b; font-weight:bold;">combinations</span> of Weapons and Passives that synergize.'
+                );
+                break;
+            case 'CREDITS_AND_CORES':
+                this.ui.show(
+                    'Meta Progression',
+                    'You found a <span style="color:#fbbf24; font-weight:bold;">Credit</span>!<br/><br/>Credits are used between runs in the <span style="color:#f59e0b; font-weight:bold;">Power Upgrades</span> menu to boost your base stats permanently.'
+                );
+                break;
             case 'APEX_METER':
                 this.ui.show(
                     'Apex Ready!',

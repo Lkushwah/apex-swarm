@@ -26,6 +26,7 @@
           <div class="bar-wrap">
             <div class="bar-track hp-track">
               <div id="hp-fill" class="bar-fill hp-bar" style="width:100%"></div>
+              <span class="bar-label">HEALTH</span>
             </div>
           </div>
           <div class="apex-meter-container">
@@ -50,6 +51,19 @@
       <div id="apex-timer-bar-wrap"><div id="apex-timer-bar"></div></div>
     </div>
 
+    <!-- BOSS UI -->
+    <div id="boss-ui" class="hidden" style="position: absolute; top: 10%; left: 50%; transform: translateX(-50%); width: 80%; max-width: 600px; text-align: center; pointer-events: none; z-index: 90;">
+      <h3 id="boss-name" style="margin: 0; color: #fff; font-size: 20px; text-shadow: 0 0 10px rgba(255,255,255,0.5);">BOSS NAME</h3>
+      <div style="width: 100%; height: 20px; background: rgba(0,0,0,0.8); border: 2px solid #fff; border-radius: 10px; overflow: hidden; margin-top: 5px;">
+        <div id="boss-hp-fill" style="width: 100%; height: 100%; background: #ef4444; transition: width 0.1s linear;"></div>
+      </div>
+    </div>
+    
+    <div id="boss-warning" class="hidden" style="position: absolute; top: 40%; left: 0; width: 100%; text-align: center; pointer-events: none; z-index: 100;">
+      <h1 style="color: #ef4444; font-size: 48px; text-shadow: 0 0 20px #ef4444, 0 0 40px #ef4444; animation: flashWarning 1s infinite alternate;">WARNING</h1>
+      <h2 style="color: #fff; font-size: 24px; text-shadow: 0 0 10px #fff;">BOSS APPROACHING</h2>
+    </div>
+
     <!-- ============ MAIN MENU ============ -->
     <div id="main-menu" class="overlay">
       <div class="menu-bg-glow"></div>
@@ -60,6 +74,7 @@
         <button id="daily-challenge-btn" class="btn btn-secondary" style="border-color: #f0abfc; color: #f0abfc;">📅 DAILY CHALLENGE</button>
         <button id="power-upgrades-btn" class="btn btn-secondary">⚡ POWER UPGRADES</button>
         <button id="cosmetics-btn" class="btn btn-secondary" style="border-color: #a855f7; color: #a855f7;">🎨 COSMETICS</button>
+        <button id="achievements-btn" class="btn btn-secondary" style="border-color: #4ade80; color: #4ade80;">🏅 ACHIEVEMENTS</button>
         <button id="leaderboards-btn" class="btn btn-secondary" style="border-color: #38bdf8; color: #38bdf8;">🏆 LEADERBOARDS</button>
       </div>
       <p class="menu-hint">Move with Mouse or Touch · Auto-Attack · Survive!</p>
@@ -95,6 +110,11 @@
     <!-- ============ LEADERBOARDS ============ -->
     <div id="leaderboards-screen" class="overlay hidden">
       <!-- Filled dynamically by LeaderboardUI -->
+    </div>
+
+    <!-- ============ ACHIEVEMENTS ============ -->
+    <div id="achievements-screen" class="overlay hidden">
+      <!-- Filled dynamically by AchievementsUI -->
     </div>
 
     <!-- ============ NAME PROMPT ============ -->

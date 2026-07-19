@@ -27,6 +27,12 @@ export class UIManager {
     private apexMeterFill = document.getElementById('apex-meter-fill')!;
     private apexTriggerBtn = document.getElementById('apex-trigger-btn')!;
 
+    // Boss elements
+    private bossUI = document.getElementById('boss-ui')!;
+    private bossName = document.getElementById('boss-name')!;
+    private bossHpFill = document.getElementById('boss-hp-fill')!;
+    private bossWarning = document.getElementById('boss-warning')!;
+
     public showMainMenu() {
         this.hideAll();
         this.mainMenu.classList.remove('hidden');
@@ -83,6 +89,24 @@ export class UIManager {
         this.apexBanner.classList.add('hidden');
     }
 
+    public showBossWarning() {
+        this.bossWarning.classList.remove('hidden');
+        setTimeout(() => {
+            this.bossWarning.classList.add('hidden');
+        }, 3000);
+    }
+
+    public updateBossHP(name: string, hp: number, maxHp: number) {
+        this.bossUI.classList.remove('hidden');
+        this.bossName.innerText = name.toUpperCase();
+        this.bossHpFill.style.width = `${Math.max(0, (hp / maxHp) * 100)}%`;
+    }
+
+    public hideBossUI() {
+        this.bossUI.classList.add('hidden');
+        this.bossWarning.classList.add('hidden');
+    }
+
     private apexMeterTrack = document.querySelector('.apex-meter-track') as HTMLElement;
 
     public updateHUD(hp: number, maxHp: number, xp: number, xpToNext: number, level: number, time: number, credits: number, apexMeter: number, cores: number) {
@@ -113,6 +137,8 @@ export class UIManager {
         this.gameOverScreen.classList.add('hidden');
         this.hud.classList.add('hidden');
         this.apexBanner.classList.add('hidden');
+        this.bossUI.classList.add('hidden');
+        this.bossWarning.classList.add('hidden');
         // NOTE: powerUpgradesScreen is managed separately
     }
 
