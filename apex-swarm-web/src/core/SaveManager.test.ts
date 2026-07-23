@@ -10,8 +10,11 @@ describe('SaveManager', () => {
         sm = new SaveManager();
     });
 
-    it('should have all cosmetics unlocked for testing', () => {
-        expect(sm.hasCosmetic('any_random_id')).toBe(true);
+    it('should handle cosmetic unlock state correctly', () => {
+        expect(sm.hasCosmetic('default')).toBe(true);
+        expect(sm.hasCosmetic('neon_red')).toBe(false);
+        sm.unlockCosmetic('neon_red');
+        expect(sm.hasCosmetic('neon_red')).toBe(true);
     });
 
     it('should store and retrieve display name', () => {

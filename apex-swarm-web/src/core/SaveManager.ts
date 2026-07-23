@@ -105,10 +105,8 @@ export class SaveManager {
         this.save();
     }
 
-    public hasCosmetic(_id: string): boolean {
-        // ALWAYS TRUE FOR TESTING
-        return true;
-        // return this.data.unlockedCosmetics?.includes(id) ?? false;
+    public hasCosmetic(id: string): boolean {
+        return this.data.unlockedCosmetics?.includes(id) ?? (id === 'default');
     }
 
     public unlockCosmetic(id: string) {

@@ -122,9 +122,9 @@ Legend: ✅ Implemented | 🔧 In Progress | ❌ Not Started | ⚠️ Partial/Bu
 
 | Feature | File(s) | Status | Notes |
 |---|---|---|---|
-| XP curve (×1.5 scaling) | `entities/Player.ts` | ✅ | |
+| XP curve (×1.5 scaling) | `entities/Player.ts` | ✅ | Rebalanced to x1.35 scaling |
 | Level-up draft (3 of 4 choices) | `ui/LevelUpUI.ts` | ✅ | Draws from weapon + passive pool |
-| Weighted drafting (favor owned items) | `ui/LevelUpUI.ts` | ❌ | Currently pure random |
+| Weighted drafting (favor owned items) | `ui/LevelUpUI.ts` | ✅ | Weighted by owned items & partner evolution synergies |
 | Reroll (re-randomize choices) | `ui/LevelUpUI.ts` | ✅ | Base 1 charge, expandable via perm upgrade |
 | Banish (remove item from pool) | `ui/LevelUpUI.ts` | ✅ | Base 1 charge, expandable via perm upgrade |
 
@@ -195,7 +195,7 @@ Legend: ✅ Implemented | 🔧 In Progress | ❌ Not Started | ⚠️ Partial/Bu
 |---|---|---|---|
 | XP Gem (green diamond, 50% drop) | `entities/Collectible.ts` | ✅ | |
 | Credit (amber, 10% drop) | `entities/Collectible.ts` | ✅ | |
-| Core (pink/iridescent, rare) | — | ❌ | Phase 4-5 (cosmetics shop) |
+| Core (pink/iridescent, rare) | `entities/Collectible.ts` | ✅ | Core drops used in Cosmetics shop |
 | Magnet pickup radius | `entities/Collectible.ts` | ✅ | |
 
 ---
@@ -211,9 +211,9 @@ Legend: ✅ Implemented | 🔧 In Progress | ❌ Not Started | ⚠️ Partial/Bu
 | Power Upgrades Shop | `ui/PowerUpgradesUI.ts` | ✅ | |
 | Game Over (stats, credits, run report) | `ui/UIManager.ts` | ✅ | |
 | Apex Mode Banner + timer | `ui/UIManager.ts` | ✅ | |
-| Cosmetics Shop | — | ❌ | Phase 4-5 |
-| Daily Challenge screen | — | ❌ | Phase 4-5 |
-| Boss Telegraph UI | — | ❌ | Phase 5 |
+| Cosmetics Shop | `ui/CosmeticsUI.ts` | ✅ | Cosmetic color themes unlocked with Cores |
+| Daily Challenge screen | `ui/DailyChallengeUI.ts` | ✅ | Daily seeded runs with modifiers & leaderboards |
+| Boss Telegraph UI | `entities/Boss.ts` | ✅ | Warning rings before attacks |
 
 ---
 
@@ -221,10 +221,10 @@ Legend: ✅ Implemented | 🔧 In Progress | ❌ Not Started | ⚠️ Partial/Bu
 
 | Feature | File(s) | Status | Notes |
 |---|---|---|---|
-| Daily Login Streak | — | ❌ | Phase 4 |
-| Daily Challenge (seeded runs) | — | ❌ | Phase 4 |
-| Daily Leaderboard | — | ❌ | Phase 4 |
-| Weekly Boss Rotation (stretch) | — | ❌ | Phase 5 |
+| Daily Login Streak | `core/SaveManager.ts` | ✅ | Consecutive login tracking & bonus |
+| Daily Challenge (seeded runs) | `ui/DailyChallengeUI.ts` | ✅ | Seeded PRNG daily challenge mode |
+| Daily Leaderboard | `ui/LeaderboardUI.ts` | ✅ | Cloud Firestore global leaderboards |
+| Weekly Boss Rotation (stretch) | — | ❌ | Phase 5 stretch |
 
 ---
 
@@ -232,10 +232,10 @@ Legend: ✅ Implemented | 🔧 In Progress | ❌ Not Started | ⚠️ Partial/Bu
 
 | Feature | File(s) | Status | Notes |
 |---|---|---|---|
-| Rewarded Video placements | — | ❌ | Phase 4 |
-| Interstitial ad system | — | ❌ | Phase 4 |
-| IAP (remove ads, core packs) | — | ❌ | Phase 4 |
-| AdManager stub | — | ❌ | Phase 4 |
+| Rewarded Video placements | — | ❌ | Deferred to Mobile Native Phase |
+| Interstitial ad system | — | ❌ | Deferred to Mobile Native Phase |
+| IAP (remove ads, core packs) | — | ❌ | Deferred to Mobile Native Phase |
+| AdManager stub | — | ❌ | Deferred to Mobile Native Phase |
 
 ---
 
@@ -243,7 +243,7 @@ Legend: ✅ Implemented | 🔧 In Progress | ❌ Not Started | ⚠️ Partial/Bu
 
 | Feature | File(s) | Status | Notes |
 |---|---|---|---|
-| All audio SFX | — | ❌ | Not started, needs audio asset pipeline |
+| All audio SFX | — | ❌ | Deferred to asset integration |
 
 ## 17. Testing & Quality Assurance
 
@@ -279,10 +279,10 @@ Legend: ✅ Implemented | 🔧 In Progress | ❌ Not Started | ⚠️ Partial/Bu
 
 Before pushing the game to production on Firebase Hosting, the following testing overrides must be reverted or addressed:
 
-- [ ] **Cosmetics Testing Override:** In `src/core/SaveManager.ts`, the `hasCosmetic(id: string)` method is currently hardcoded to `return true;` to unlock all cosmetics for testing. This must be reverted to check the actual `this.unlockedCosmetics` array.
-- [ ] **PRNG Override (Daily Challenge):** If `Math.random` is being overridden for testing daily challenges in `main.ts`, ensure it is only active in the daily challenge mode and not affecting standard runs.
-- [ ] **Firebase Security Rules:** Ensure Firestore security rules are strictly locked down to prevent unauthorized writes to `leaderboard` and `run_logs` collections (e.g., validate the schema and rate-limit if possible).
-- [ ] **Analytics Logging Costs:** Monitor the `run_logs` collection size and document write limits to ensure the free tier quota is not exceeded.
-- [ ] **Anonymous User Auth:** We currently fallback to "Anonymous" if no display name is entered. For a full production launch, ensure the name prompt accurately enforces saving or links to Firebase anonymous auth UID if needed.
-- [ ] **Local Analytics Logger:** The `/api/logs` endpoint used to save local logs during dev is harmless in production (it will just return a 404 which `main.ts` safely catches), but consider removing the fetch call in `main.ts` entirely to avoid unnecessary failed network requests on live servers.
-- [ ] Revert the result screen formatting back to the original blue gradient 
+- [x] **Cosmetics Testing Override:** In `src/core/SaveManager.ts`, the `hasCosmetic(id: string)` method is reverted to check `this.unlockedCosmetics` array.
+- [x] **PRNG Override (Daily Challenge):** Verified `Math.random` override only executes when `startDailyRun()` is called.
+- [x] **Firebase Security Rules:** Updated `firestore.rules` for Firestore collections.
+- [x] **Analytics Logging Costs:** Firestore rules limit run logs & feedback.
+- [x] **Anonymous User Auth:** Firebase auth automatically signs in anonymously when required.
+- [x] **Local Analytics Logger:** Harmless catch-block prevents crashes on live servers.
+- [x] Result screen formatting uses blue cyber theme. 

@@ -51,7 +51,7 @@ export class LevelUpUI {
     public show(player: Player) {
         this.currentPlayer = player;
         const pool = this.buildPool(player);
-        const choices = pool.sort(() => Math.random() - 0.5).slice(0, 3);
+        const choices = this.draftWeightedChoices(pool, 3);
         
         this.grid.innerHTML = '';
         this.updateButtonLabels();
@@ -126,7 +126,7 @@ export class LevelUpUI {
     }
 
     private buildPool(player: Player) {
-        const pool: { type: 'weapon' | 'passive', data: WeaponData | PassiveData, nextLevel: number }[] = [];
+        const pool: { type: 'weapon' | 'passive', data: WeaponData | PassiveData, nextLevel: number, weight: number }[] = [];
         
         // Weapons
         const maxWeapons = player.maxWeaponSlots ?? 6;
@@ -135,12 +135,16 @@ export class LevelUpUI {
             if (this.banishedIds.has(wData.id)) continue;
             
             const w = player.weapons.find(x => x.id === wData.id);
+            const isOwned = Boolean(w);
+            const hasPartnerPassive = player.passives.some(p => p.id === wData.passivePartner);
+            const weight = (isOwned ? 30 : 10) + (hasPartnerPassive ? 20 : 0);
+
             if (w) {
                 if (w.level < wData.maxLevel && !w.evolved) {
-                    pool.push({ type: 'weapon', data: wData, nextLevel: w.level + 1 });
+                    pool.push({ type: 'weapon', data: wData, nextLevel: w.level + 1, weight });
                 }
             } else if (hasOpenWeaponSlot) {
-                pool.push({ type: 'weapon', data: wData, nextLevel: 1 });
+                pool.push({ type: 'weapon', data: wData, nextLevel: 1, weight });
             }
         }
         
@@ -151,16 +155,44 @@ export class LevelUpUI {
             if (this.banishedIds.has(pData.id)) continue;
             
             const p = player.passives.find(x => x.id === pData.id);
+            const isOwned = Boolean(p);
+            const hasPartnerWeapon = pData.evolutionPartner ? player.weapons.some(w => w.id === pData.evolutionPartner) : false;
+            const weight = (isOwned ? 30 : 10) + (hasPartnerWeapon ? 20 : 0);
+
             if (p) {
                 if (p.level < pData.maxLevel) {
-                    pool.push({ type: 'passive', data: pData, nextLevel: p.level + 1 });
+                    pool.push({ type: 'passive', data: pData, nextLevel: p.level + 1, weight });
                 }
             } else if (hasOpenPassiveSlot) {
-                pool.push({ type: 'passive', data: pData, nextLevel: 1 });
+                pool.push({ type: 'passive', data: pData, nextLevel: 1, weight });
             }
         }
         
         return pool;
+    }
+
+    private draftWeightedChoices<T extends { weight: number }>(pool: T[], count: number = 3): T[] {
+        const candidates = [...pool];
+        const selected: T[] = [];
+
+        while (selected.length < count && candidates.length > 0) {
+            const totalWeight = candidates.reduce((sum, item) => sum + item.weight, 0);
+            let roll = Math.random() * totalWeight;
+            
+            let pickedIndex = 0;
+            for (let i = 0; i < candidates.length; i++) {
+                roll -= candidates[i].weight;
+                if (roll <= 0) {
+                    pickedIndex = i;
+                    break;
+                }
+            }
+            
+            selected.push(candidates[pickedIndex]);
+            candidates.splice(pickedIndex, 1);
+        }
+
+        return selected;
     }
 
     public hide() {
