@@ -89,6 +89,17 @@ export class Enemy {
     // Damage reduction (from bulwark shield)
     private damageReduction: number = 1.0;
 
+    // Hit Reaction & Feedback properties
+    public hitFlashTimer: number = 0;
+    public knockbackVx: number = 0;
+    public knockbackVy: number = 0;
+    public squashX: number = 1.0;
+    public squashY: number = 1.0;
+
+    public get drawColor(): string {
+        return this.hitFlashTimer > 0 ? '#ffffff' : this.color;
+    }
+
     constructor(x: number, y: number, timeScale: number, type: EnemyType = 'swarmer') {
         this.x = x;
         this.y = y;
@@ -112,7 +123,7 @@ export class Enemy {
     }
 
     // Override HP subtraction for damage reduction
-    public takeDamageFrom(amount: number, fromAngle?: number): number {
+    public takeDamageFrom(amount: number, fromAngle?: number, knockbackForce: number = 0, knockbackDirX: number = 0, knockbackDirY: number = 0): number {
         // Shielder: reduce damage from the front
         if (this.enemyType === 'shielder' && fromAngle !== undefined) {
             const angleDiff = Math.abs(Math.atan2(
@@ -132,11 +143,36 @@ export class Enemy {
 
         const dmgDealt = Math.max(0, Math.min(this.hp, amount * this.damageReduction));
         this.hp -= amount * this.damageReduction;
+
+        // Trigger visual & physical hit reactions
+        this.hitFlashTimer = 0.08;
+        this.squashX = 0.75;
+        this.squashY = 1.25;
+
+        if (knockbackForce > 0) {
+            const massFactor = this.enemyType === 'brute' ? 0.3 : this.enemyType === 'bulwark_drone' ? 0.4 : 1.0;
+            this.knockbackVx += knockbackDirX * knockbackForce * massFactor;
+            this.knockbackVy += knockbackDirY * knockbackForce * massFactor;
+        }
+
         return dmgDealt;
     }
 
     public update(dt: number, player: Player, canTakeDamage: boolean = true) {
         if (this.isDead) return;
+
+        // Hit Reaction timers & physical forces
+        if (this.hitFlashTimer > 0) this.hitFlashTimer -= dt;
+
+        this.squashX += (1.0 - this.squashX) * 15 * dt;
+        this.squashY += (1.0 - this.squashY) * 15 * dt;
+
+        if (Math.hypot(this.knockbackVx, this.knockbackVy) > 0.1) {
+            this.x += this.knockbackVx * dt;
+            this.y += this.knockbackVy * dt;
+            this.knockbackVx *= Math.pow(0.02, dt);
+            this.knockbackVy *= Math.pow(0.02, dt);
+        }
 
         if (this.isFleeing) {
             const dx = this.x - player.x;
@@ -388,6 +424,9 @@ export class Enemy {
         if (this.isDead) return;
         
         ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.scale(this.squashX, this.squashY);
+        ctx.translate(-this.x, -this.y);
 
         switch (this.shape) {
             case 'square':
@@ -436,7 +475,7 @@ export class Enemy {
     }
 
     private drawSquare(ctx: CanvasRenderingContext2D) {
-        ctx.fillStyle = this.color;
+        ctx.fillStyle = this.drawColor;
         ctx.fillRect(this.x - this.radius, this.y - this.radius, this.radius * 2, this.radius * 2);
         ctx.strokeStyle = this.darken(this.color);
         ctx.lineWidth = 2;
@@ -446,7 +485,7 @@ export class Enemy {
     private drawCircle(ctx: CanvasRenderingContext2D) {
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-        ctx.fillStyle = this.color;
+        ctx.fillStyle = this.drawColor;
         ctx.fill();
         ctx.strokeStyle = this.darken(this.color);
         ctx.lineWidth = 2;
@@ -460,7 +499,7 @@ export class Enemy {
         ctx.lineTo(this.x, this.y + this.radius);
         ctx.lineTo(this.x - this.radius, this.y);
         ctx.closePath();
-        ctx.fillStyle = this.color;
+        ctx.fillStyle = this.drawColor;
         ctx.fill();
         ctx.strokeStyle = this.darken(this.color);
         ctx.lineWidth = 2;
@@ -477,7 +516,7 @@ export class Enemy {
             else ctx.lineTo(hx, hy);
         }
         ctx.closePath();
-        ctx.fillStyle = this.color;
+        ctx.fillStyle = this.drawColor;
         ctx.fill();
         ctx.strokeStyle = this.darken(this.color);
         ctx.lineWidth = 2;
@@ -507,7 +546,7 @@ export class Enemy {
         ctx.lineTo(this.x + this.radius * 0.87, this.y + this.radius * 0.5);
         ctx.lineTo(this.x - this.radius * 0.87, this.y + this.radius * 0.5);
         ctx.closePath();
-        ctx.fillStyle = this.color;
+        ctx.fillStyle = this.drawColor;
         ctx.fill();
         ctx.strokeStyle = this.darken(this.color);
         ctx.lineWidth = 2;
@@ -535,7 +574,7 @@ export class Enemy {
             else ctx.lineTo(ox, oy);
         }
         ctx.closePath();
-        ctx.fillStyle = this.color;
+        ctx.fillStyle = this.drawColor;
         ctx.fill();
         ctx.strokeStyle = this.darken(this.color);
         ctx.lineWidth = 2;
@@ -572,7 +611,7 @@ export class Enemy {
             { x: -6, y: 6 },
             { x: 6, y: 6 },
         ];
-        ctx.fillStyle = this.color;
+        ctx.fillStyle = this.drawColor;
         const jitter = Math.sin(Date.now() / 80) * 2;
         for (const off of offsets) {
             const sx = this.x + off.x + (off.x ? jitter * Math.sign(off.x) : 0);

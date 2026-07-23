@@ -60,8 +60,13 @@ export class Projectile {
             isCrit = true;
         }
 
-        const dmgDealt = Math.max(0, Math.min(e.hp, finalDamage));
-        e.hp -= finalDamage;
+        const speed = Math.hypot(this.vx, this.vy) || 1;
+        const dirX = this.vx / speed;
+        const dirY = this.vy / speed;
+        const angle = Math.atan2(this.vy, this.vx);
+        const knockbackForce = 120;
+
+        const dmgDealt = e.takeDamageFrom(finalDamage, angle, knockbackForce, dirX, dirY);
         this.isDead = true; // By default, die on first hit
         
         // Lifesteal: Apex lifesteal + player global lifesteal

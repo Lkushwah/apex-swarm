@@ -59,11 +59,12 @@ export class MissileProjectile extends Projectile {
                     isCrit = true;
                 }
 
-                const dmgDealt = Math.max(0, Math.min(other.hp, finalDamage));
-                other.hp -= finalDamage;
+                const dx = other.x - this.x;
+                const dy = other.y - this.y;
+                const dist = Math.hypot(dx, dy) || 1;
+                other.takeDamageFrom(finalDamage, Math.atan2(dy, dx), 180, dx / dist, dy / dist);
 
-                const totalLifesteal = (apexSystem?.lifesteal ?? 0) + player.globalLifesteal;
-                if (totalLifesteal > 0) player.lifestealHeal(dmgDealt * totalLifesteal);
+                player.tryLifestealProc(apexSystem?.lifesteal ?? 0);
 
                 // Floating text
                 Projectile.floatingTexts.push(new FloatingText(
@@ -143,7 +144,10 @@ export class PlasmaOrbProjectile extends Projectile {
             if (dist < this.radius + e.radius) {
                 this.hitCooldowns.set(e, 0.35); // 0.35s internal hit-cooldown per enemy
                 const d = this.damage;
-                e.hp -= d;
+                const dx = e.x - this.x;
+                const dy = e.y - this.y;
+                const dDist = Math.hypot(dx, dy) || 1;
+                e.takeDamageFrom(d, Math.atan2(dy, dx), 40, dx / dDist, dy / dDist);
                 player.tryLifestealProc(apexSystem?.lifesteal ?? 0);
             }
         }
@@ -190,11 +194,12 @@ export class ChainLightningProjectile extends Projectile {
             isCrit = true;
         }
 
-        const dmgDealt = Math.max(0, Math.min(e.hp, currentDamage));
-        e.hp -= currentDamage;
+        const dx = e.x - this.x;
+        const dy = e.y - this.y;
+        const dist = Math.hypot(dx, dy) || 1;
+        e.takeDamageFrom(currentDamage, Math.atan2(dy, dx), 90, dx / dist, dy / dist);
 
-        const totalLifesteal = (apexSystem?.lifesteal ?? 0) + player.globalLifesteal;
-        if (totalLifesteal > 0) player.lifestealHeal(dmgDealt * totalLifesteal);
+        player.tryLifestealProc(apexSystem?.lifesteal ?? 0);
 
         // Floating text
         Projectile.floatingTexts.push(new FloatingText(
@@ -303,12 +308,12 @@ export class ScytheArcProjectile extends Projectile {
                     isCrit = true;
                 }
 
-                const dmgDealt = Math.max(0, Math.min(e.hp, d));
-                e.hp -= d;
+                const dx = e.x - player.x;
+                const dy = e.y - player.y;
+                const dDist = Math.hypot(dx, dy) || 1;
+                e.takeDamageFrom(d, Math.atan2(dy, dx), 220, dx / dDist, dy / dDist);
                 
-                // Melee lifesteal from passive + global + apex
-                const totalLifesteal = (apexSystem?.lifesteal ?? 0) + player.meleeLifesteal + player.globalLifesteal;
-                if (totalLifesteal > 0) player.lifestealHeal(dmgDealt * totalLifesteal);
+                player.tryLifestealProc(apexSystem?.lifesteal ?? 0);
 
                 // Floating text
                 Projectile.floatingTexts.push(new FloatingText(

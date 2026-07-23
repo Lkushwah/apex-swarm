@@ -63,6 +63,9 @@ export class Boss {
     private dashTarget: { x: number, y: number } = { x: 0, y: 0 };
     private dashTrail: { x: number, y: number, timer: number }[] = [];
 
+    // Hit Reaction feedback
+    public hitFlashTimer: number = 0;
+
     // Boss reward config
     public rewardLevelUps: number = 1;
     public rewardCredits: number = 100;
@@ -143,6 +146,8 @@ export class Boss {
     public takeDamage(amount: number): number {
         if (this.state === 'spawning' || this.state === 'dying') return 0;
 
+        this.hitFlashTimer = 0.08; // Flash white on hit!
+
         // If Swarm Hive has regen shield active, damage the shield first
         if (this.bossType === 'swarm_hive' && this.isRegenerating && this.regenShieldHP > 0) {
             this.regenShieldHP -= amount;
@@ -181,6 +186,8 @@ export class Boss {
 
     public update(dt: number, player: Player, canTakeDamage: boolean) {
         if (this.isDead) return;
+
+        if (this.hitFlashTimer > 0) this.hitFlashTimer -= dt;
 
         // Death animation
         if (this.state === 'dying') {
@@ -894,7 +901,7 @@ export class Boss {
 
         // Fill color & glow
         let fillColor = this.color;
-        if (this.stunTimer > 0) fillColor = '#ffffff';
+        if (this.stunTimer > 0 || this.hitFlashTimer > 0) fillColor = '#ffffff';
         if (this.state === 'phase2') {
             const pulse = Math.sin(Date.now() / 150) * 0.3 + 0.7;
             ctx.globalAlpha = (ctx.globalAlpha || 1) * pulse;
