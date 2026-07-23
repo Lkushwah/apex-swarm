@@ -1,5 +1,7 @@
 import { Enemy, ENEMY_CONFIGS, type EnemyType } from '../entities/Enemy';
 import { Boss, type BossType } from '../entities/Boss';
+import { EMPHazard } from '../entities/EMPHazard';
+import { Player } from '../entities/Player';
 
 // -------------------------------------------------------
 // WaveManager — weighted spawn system per GDD §8.4
@@ -17,6 +19,9 @@ export class WaveManager {
     private spawnTimer: number = 0;
     private baseSpawnRate: number = 1.0;
     private bounds: { width: number, height: number };
+
+    public empHazards: EMPHazard[] = [];
+    private empSpawnTimer: number = 5.0; // First EMP hazard spawns at 5s
 
     public activeBoss: Boss | null = null;
     private bossMilestones = [
@@ -41,8 +46,28 @@ export class WaveManager {
         return 1 + (t / 90) + Math.pow(t / 300, 2);
     }
 
-    public update(dt: number, enemies: Enemy[], currentLevel: number) {
+    public update(dt: number, enemies: Enemy[], currentLevel: number, player?: Player) {
         this.survivalTime += dt;
+
+        // EMP Hazard Spawning & Updates
+        if (player) {
+            this.empSpawnTimer -= dt;
+            if (this.empSpawnTimer <= 0 && this.empHazards.length < 3) {
+                this.empSpawnTimer = 15.0 + Math.random() * 10;
+                const margin = 120;
+                const hx = margin + Math.random() * (this.bounds.width - margin * 2);
+                const hy = margin + Math.random() * (this.bounds.height - margin * 2);
+                this.empHazards.push(new EMPHazard(hx, hy));
+            }
+
+            for (let i = this.empHazards.length - 1; i >= 0; i--) {
+                const emp = this.empHazards[i];
+                emp.update(dt, player, enemies);
+                if (emp.state === 'expired') {
+                    this.empHazards.splice(i, 1);
+                }
+            }
+        }
 
         if (!this.activeBoss) {
             for (const milestone of this.bossMilestones) {
@@ -122,6 +147,11 @@ export class WaveManager {
         // Bulwark Drone: unlocks at 7:00
         if (t >= ENEMY_CONFIGS.bulwark_drone.unlockTime) {
             weights.push({ type: 'bulwark_drone', weight: Math.min(10, 2 + (t - 420) * 0.04) });
+        }
+
+        // Kamikaze: unlocks at 1:30 (90s)
+        if (t >= ENEMY_CONFIGS.kamikaze.unlockTime) {
+            weights.push({ type: 'kamikaze', weight: Math.min(16, 4 + (t - 90) * 0.08) });
         }
 
         // Glitch Swarm: unlocks at 9:00, becomes a larger share late

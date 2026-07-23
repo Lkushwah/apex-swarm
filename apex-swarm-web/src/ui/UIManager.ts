@@ -29,8 +29,6 @@ export class UIManager {
 
     // Boss elements
     private bossUI = document.getElementById('boss-ui')!;
-    private bossName = document.getElementById('boss-name')!;
-    private bossHpFill = document.getElementById('boss-hp-fill')!;
     private bossWarning = document.getElementById('boss-warning')!;
 
     public showMainMenu() {
@@ -96,10 +94,9 @@ export class UIManager {
         }, 3000);
     }
 
-    public updateBossHP(name: string, hp: number, maxHp: number) {
-        this.bossUI.classList.remove('hidden');
-        this.bossName.innerText = name.toUpperCase();
-        this.bossHpFill.style.width = `${Math.max(0, (hp / maxHp) * 100)}%`;
+    public updateBossHP(_name: string, _hp: number, _maxHp: number) {
+        // Disabled HTML DOM boss bar — boss HP bar is rendered smoothly on the canvas in Boss.ts
+        this.bossUI.classList.add('hidden');
     }
 
     public hideBossUI() {

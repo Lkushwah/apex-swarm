@@ -112,6 +112,7 @@ export class PlasmaOrbProjectile extends Projectile {
     private playerRef: Player;
     private orbitAngle: number;
     private orbitDistance: number;
+    private hitCooldowns: Map<Enemy, number> = new Map();
 
     constructor(player: Player, angleOffset: number, damage: number, sizeBonus: number) {
         super(player.x, player.y, 0, damage, 0);
@@ -128,17 +129,22 @@ export class PlasmaOrbProjectile extends Projectile {
         this.x = this.playerRef.x + Math.cos(this.orbitAngle) * this.orbitDistance;
         this.y = this.playerRef.y + Math.sin(this.orbitAngle) * this.orbitDistance;
         
-        // Custom collision, doesn't die on hit
+        // Update hit cooldown timers
+        for (const [e, timer] of Array.from(this.hitCooldowns.entries())) {
+            const nextTimer = timer - dt;
+            if (nextTimer <= 0) this.hitCooldowns.delete(e);
+            else this.hitCooldowns.set(e, nextTimer);
+        }
+
+        // Discrete 0.35s pulse collision check
         for (const e of enemies) {
-            if (e.isDead) continue;
+            if (e.isDead || this.hitCooldowns.has(e)) continue;
             const dist = Math.hypot(this.x - e.x, this.y - e.y);
             if (dist < this.radius + e.radius) {
-                const d = this.damage * dt * 5;
-                const dmgDealt = Math.max(0, Math.min(e.hp, d));
+                this.hitCooldowns.set(e, 0.35); // 0.35s internal hit-cooldown per enemy
+                const d = this.damage;
                 e.hp -= d;
-
-                const totalLifesteal = (apexSystem?.lifesteal ?? 0) + player.globalLifesteal;
-                if (totalLifesteal > 0) player.lifestealHeal(dmgDealt * totalLifesteal);
+                player.tryLifestealProc(apexSystem?.lifesteal ?? 0);
             }
         }
     }

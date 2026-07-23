@@ -3,11 +3,11 @@ import { Player } from './Player';
 // -------------------------------------------------------
 // Enemy Types per GDD §8.2
 // -------------------------------------------------------
-export type EnemyType = 'swarmer' | 'brute' | 'shooter' | 'shielder' | 'phasewraith' | 'bulwark_drone' | 'glitch_swarm';
+export type EnemyType = 'swarmer' | 'brute' | 'shooter' | 'shielder' | 'phasewraith' | 'bulwark_drone' | 'glitch_swarm' | 'kamikaze';
 
 interface EnemyConfig {
     type: EnemyType;
-    shape: 'square' | 'circle' | 'diamond' | 'hexagon' | 'triangle' | 'octagon' | 'tiny_squares';
+    shape: 'square' | 'circle' | 'diamond' | 'hexagon' | 'triangle' | 'octagon' | 'tiny_squares' | 'star';
     color: string;
     baseHp: number;
     baseSpeed: number;
@@ -44,6 +44,10 @@ const ENEMY_CONFIGS: Record<EnemyType, EnemyConfig> = {
     glitch_swarm: {
         type: 'glitch_swarm', shape: 'tiny_squares', color: '#ec4899',
         baseHp: 8, baseSpeed: 100, baseDamage: 6, radiusBase: 7, unlockTime: 540
+    },
+    kamikaze: {
+        type: 'kamikaze', shape: 'star', color: '#ff2222',
+        baseHp: 25, baseSpeed: 95, baseDamage: 18, radiusBase: 10, unlockTime: 90
     }
 };
 
@@ -407,6 +411,9 @@ export class Enemy {
             case 'tiny_squares':
                 this.drawTinySquares(ctx);
                 break;
+            case 'star':
+                this.drawStar(ctx);
+                break;
         }
 
         // HP bar for enemies with > 50 base HP
@@ -597,5 +604,24 @@ export class Enemy {
         } catch {
             return '#333';
         }
+    }
+
+    private drawStar(ctx: CanvasRenderingContext2D) {
+        ctx.beginPath();
+        for (let i = 0; i < 5; i++) {
+            const rOuter = this.radius;
+            const rInner = this.radius * 0.5;
+            const aOuter = (Math.PI * 2 / 5) * i - Math.PI / 2;
+            const aInner = aOuter + Math.PI / 5;
+            if (i === 0) ctx.moveTo(this.x + rOuter * Math.cos(aOuter), this.y + rOuter * Math.sin(aOuter));
+            else ctx.lineTo(this.x + rOuter * Math.cos(aOuter), this.y + rOuter * Math.sin(aOuter));
+            ctx.lineTo(this.x + rInner * Math.cos(aInner), this.y + rInner * Math.sin(aInner));
+        }
+        ctx.closePath();
+        ctx.fillStyle = this.color;
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
     }
 }

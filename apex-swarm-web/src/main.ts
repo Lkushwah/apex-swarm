@@ -540,7 +540,8 @@ const gameLoop = new GameLoop(
         const bounds = renderer.getDimensions();
 
         // Wave & weapons (with effective damage multiplier including APEX bonus)
-        waveManager.update(scaledDt, enemies, player.level);
+        (player as any).currentEnemiesList = enemies;
+        waveManager.update(scaledDt, enemies, player.level, player);
         survivalTime = waveManager.survivalTime;
         const effectiveDamageBonus = apexSystem.damageMultiplierBonus;
         weaponSystem.apexDamageBonus = effectiveDamageBonus;
@@ -776,6 +777,7 @@ const gameLoop = new GameLoop(
         apexShards.forEach(s => s.draw(ctx));
 
         collectibles.forEach(c => c.draw(ctx, waveManager?.survivalTime ?? 0));
+        if (waveManager) waveManager.empHazards.forEach(h => h.draw(ctx));
         enemies.forEach(e => e.draw(ctx));
         if (currentBoss && gameState !== 'GAMEOVER') {
             const dims = renderer.getDimensions();

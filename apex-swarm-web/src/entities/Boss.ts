@@ -782,14 +782,41 @@ export class Boss {
     }
 
     private drawBody(ctx: CanvasRenderingContext2D) {
+        const timeSec = Date.now() / 1000;
+
+        // --- Outer Tech Shield / Energy Aura ---
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius * 1.35, 0, Math.PI * 2);
+        ctx.strokeStyle = this.color.replace(/[\d.]+\)$/, '0.3)') || 'rgba(255,255,255,0.3)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([8, 8]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Rotating outer tick ring
+        ctx.translate(this.x, this.y);
+        ctx.rotate(timeSec * 0.8);
+        ctx.beginPath();
+        for (let i = 0; i < 8; i++) {
+            const angle = (Math.PI * 2 / 8) * i;
+            const rx = Math.cos(angle) * (this.radius * 1.2);
+            const ry = Math.sin(angle) * (this.radius * 1.2);
+            ctx.rect(rx - 3, ry - 3, 6, 6);
+        }
+        ctx.fillStyle = this.color;
+        ctx.fill();
+        ctx.restore();
+
+        // --- Main Boss Body ---
         ctx.beginPath();
 
         switch (this.bossType) {
             case 'core_sentinel':
-                // Rotating spiked star
+                // Heavy rotating 12-point spiked star
                 for (let i = 0; i < 12; i++) {
-                    const r = i % 2 === 0 ? this.radius : this.radius * 0.7;
-                    const angle = (Math.PI * 2 / 12) * i + (Date.now() / 1000);
+                    const r = i % 2 === 0 ? this.radius : this.radius * 0.65;
+                    const angle = (Math.PI * 2 / 12) * i + (timeSec * 0.5);
                     if (i === 0) ctx.moveTo(this.x + r * Math.cos(angle), this.y + r * Math.sin(angle));
                     else ctx.lineTo(this.x + r * Math.cos(angle), this.y + r * Math.sin(angle));
                 }
@@ -797,10 +824,10 @@ export class Boss {
                 break;
 
             case 'void_weaver':
-                // Web-like pattern — intersecting triangles
-                for (let i = 0; i < 6; i++) {
+                // Web-like pattern — 8-point geometric star with inner weave
+                for (let i = 0; i < 8; i++) {
                     const r = i % 2 === 0 ? this.radius : this.radius * 0.5;
-                    const angle = (Math.PI * 2 / 6) * i + Math.sin(Date.now() / 800) * 0.3;
+                    const angle = (Math.PI * 2 / 8) * i + Math.sin(timeSec * 1.5) * 0.4;
                     if (i === 0) ctx.moveTo(this.x + r * Math.cos(angle), this.y + r * Math.sin(angle));
                     else ctx.lineTo(this.x + r * Math.cos(angle), this.y + r * Math.sin(angle));
                 }
@@ -808,31 +835,23 @@ export class Boss {
                 break;
 
             case 'swarm_hive':
-                // Large hexagonal cluster
+                // Large hexagonal cluster with inner honeycomb
                 for (let i = 0; i < 6; i++) {
-                    const angle = (Math.PI / 3) * i;
+                    const angle = (Math.PI / 3) * i + Math.sin(timeSec * 0.5) * 0.1;
                     const hx = this.x + this.radius * Math.cos(angle);
                     const hy = this.y + this.radius * Math.sin(angle);
                     if (i === 0) ctx.moveTo(hx, hy);
                     else ctx.lineTo(hx, hy);
                 }
                 ctx.closePath();
-                // Inner hex
-                ctx.moveTo(this.x + this.radius * 0.5, this.y);
-                for (let i = 1; i < 6; i++) {
-                    const angle = (Math.PI / 3) * i;
-                    ctx.lineTo(this.x + this.radius * 0.5 * Math.cos(angle), this.y + this.radius * 0.5 * Math.sin(angle));
-                }
-                ctx.closePath();
                 break;
 
             case 'chrono_wraith':
-                // Crackling energy form — irregular shifting shape
-                const time = Date.now() / 200;
-                for (let i = 0; i < 8; i++) {
-                    const jitter = Math.sin(time + i * 2.3) * this.radius * 0.15;
+                // Crackling energy form — irregular shifting multi-point shape
+                for (let i = 0; i < 10; i++) {
+                    const jitter = Math.sin(timeSec * 8 + i * 2.3) * this.radius * 0.2;
                     const r = this.radius + jitter;
-                    const angle = (Math.PI * 2 / 8) * i + Math.sin(time * 0.5) * 0.2;
+                    const angle = (Math.PI * 2 / 10) * i + Math.sin(timeSec * 2) * 0.3;
                     if (i === 0) ctx.moveTo(this.x + r * Math.cos(angle), this.y + r * Math.sin(angle));
                     else ctx.lineTo(this.x + r * Math.cos(angle), this.y + r * Math.sin(angle));
                 }
@@ -840,10 +859,10 @@ export class Boss {
                 break;
 
             case 'apex_predator':
-                // Sharp 10-pointed star
+                // Sharp 10-pointed star with razor edges
                 for (let i = 0; i < 10; i++) {
-                    const r = i % 2 === 0 ? this.radius : this.radius * 0.4;
-                    const angle = (Math.PI * 2 / 10) * i - (Date.now() / 500);
+                    const r = i % 2 === 0 ? this.radius * 1.1 : this.radius * 0.4;
+                    const angle = (Math.PI * 2 / 10) * i - (timeSec * 1.2);
                     if (i === 0) ctx.moveTo(this.x + r * Math.cos(angle), this.y + r * Math.sin(angle));
                     else ctx.lineTo(this.x + r * Math.cos(angle), this.y + r * Math.sin(angle));
                 }
@@ -851,33 +870,40 @@ export class Boss {
                 break;
         }
 
-        // Fill color varies by state
+        // Fill color & glow
         let fillColor = this.color;
         if (this.stunTimer > 0) fillColor = '#ffffff';
         if (this.state === 'phase2') {
-            // Pulsing effect
             const pulse = Math.sin(Date.now() / 150) * 0.3 + 0.7;
-            ctx.globalAlpha = (ctx.globalAlpha || 1) * pulse + (1 - pulse) * (ctx.globalAlpha || 1);
+            ctx.globalAlpha = (ctx.globalAlpha || 1) * pulse;
         }
         if (this.state === 'phase3') {
             fillColor = '#ffffff';
         }
 
         ctx.fillStyle = fillColor;
-        ctx.shadowBlur = 20;
+        ctx.shadowBlur = 25;
         ctx.shadowColor = this.color;
         ctx.fill();
         ctx.shadowBlur = 0;
 
         ctx.lineWidth = 3;
-        ctx.strokeStyle = '#000000';
+        ctx.strokeStyle = '#ffffff';
         ctx.stroke();
 
-        // Inner core / eye
+        // --- Inner Glowing Core ---
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius * 0.35, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = '#ffffff';
+        ctx.fill();
+
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.radius * 0.2, 0, Math.PI * 2);
-        ctx.fillStyle = this.state === 'phase2' ? '#ef4444' : this.state === 'phase3' ? '#ffffff' : '#000000';
+        ctx.fillStyle = this.state === 'phase2' ? '#ef4444' : this.state === 'phase3' ? '#f59e0b' : '#000000';
         ctx.fill();
+        ctx.shadowBlur = 0;
 
         // Swarm Hive regen shield visual
         if (this.bossType === 'swarm_hive' && this.isRegenerating) {

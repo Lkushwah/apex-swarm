@@ -177,6 +177,20 @@ export class Player {
         }
     }
 
+    public tryLifestealProc(apexLifestealRate: number = 0): boolean {
+        const lifestealStat = this.globalLifesteal + (this.meleeLifesteal || 0) + apexLifestealRate;
+        if (lifestealStat <= 0) return false;
+
+        // Proc chance scales with lifesteal stat (e.g. 5% base + 15% per lifesteal level)
+        const procChance = Math.min(0.40, 0.05 + (lifestealStat * 1.5));
+        if (Math.random() < procChance) {
+            const healAmount = 5 + Math.floor(lifestealStat * 15);
+            this.lifestealHeal(healAmount);
+            return true;
+        }
+        return false;
+    }
+
 
     public addXp(amount: number): boolean {
         this.xp += amount;
