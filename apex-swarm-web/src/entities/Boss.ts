@@ -165,7 +165,7 @@ export class Boss {
             this.stunTimer = 0.8;
             this.attackTimer = 0; // Reset attack cycle
         }
-        if (this.hasPhase3() && hpPct < 0.25 && this.state === 'phase2') {
+        if (this.hasPhase3() && hpPct < 0.25 && (this.state === 'phase1' || this.state === 'phase2')) {
             this.state = 'phase3';
             this.stateTimer = 1.0;
             this.stunTimer = 0.8;
@@ -176,7 +176,7 @@ export class Boss {
     }
 
     private hasPhase3(): boolean {
-        return this.bossType === 'chrono_wraith' || this.bossType === 'apex_predator';
+        return true; // All bosses enter Phase 3 (Enrage) at <= 25% HP!
     }
 
     public update(dt: number, player: Player, canTakeDamage: boolean) {
@@ -339,7 +339,6 @@ export class Boss {
 
     // ---- CORE SENTINEL (Level 5) ----
     private updateCoreSentinel(dt: number, dx: number, dy: number, dist: number, _player: Player) {
-        // Move slowly toward player
         if (dist > this.radius * 2) {
             this.x += (dx / dist) * this.speed * dt;
             this.y += (dy / dist) * this.speed * dt;
@@ -348,27 +347,32 @@ export class Boss {
         this.attackTimer -= dt;
         if (this.attackTimer <= 0) {
             if (this.state === 'phase1') {
-                this.attackTimer = 3.5;
-                this.addTelegraph(this.x, this.y, 150, 0.5, 'rgba(251,191,36,0.2)');
-                setTimeout(() => this.fireRing(10, 150), 500);
+                this.attackTimer = 2.2;
+                this.addTelegraph(this.x, this.y, 160, 0.4, 'rgba(251,191,36,0.25)');
+                setTimeout(() => this.fireRing(12, 180), 400);
             } else if (this.state === 'phase2') {
-                this.attackTimer = 2.5;
+                this.attackTimer = 1.6;
+                this.speed = 45;
                 if (this.attackCycle % 2 === 0) {
-                    this.addTelegraph(this.x, this.y, 180, 0.5, 'rgba(251,191,36,0.3)');
-                    setTimeout(() => this.fireRing(16, 180), 500);
+                    this.addTelegraph(this.x, this.y, 200, 0.4, 'rgba(251,191,36,0.35)');
+                    setTimeout(() => this.fireRing(18, 220), 400);
                 } else {
-                    this.fireBurstTarget(_player, 3);
+                    this.fireBurstTarget(_player, 5);
                 }
                 this.attackCycle++;
-                this.speed = 35; // Slight speed increase
+            } else if (this.state === 'phase3') {
+                // Enrage: Double attack rate + 24-bullet salvos
+                this.attackTimer = 1.0;
+                this.speed = 65;
+                this.fireRing(24, 250);
+                this.fireBurstTarget(_player, 5);
             }
         }
     }
 
     // ---- VOID WEAVER (Level 10) ----
     private updateVoidWeaver(dt: number, dx: number, dy: number, dist: number, player: Player) {
-        // Moves toward player moderately
-        if (dist > 200) {
+        if (dist > 180) {
             this.x += (dx / dist) * this.speed * dt;
             this.y += (dy / dist) * this.speed * dt;
         }
@@ -377,52 +381,51 @@ export class Boss {
         this.minionTimer -= dt;
 
         if (this.state === 'phase1') {
-            // Teleport + cross burst
-            if (this.attackTimer <= 0) {
-                this.attackTimer = 4.0;
-                // Teleport to random position near player
-                const angle = Math.random() * Math.PI * 2;
-                const teleportDist = 150 + Math.random() * 100;
-                this.x = player.x + Math.cos(angle) * teleportDist;
-                this.y = player.y + Math.sin(angle) * teleportDist;
-                // Clamp to screen
-                this.x = Math.max(50, Math.min(750, this.x));
-                this.y = Math.max(50, Math.min(1250, this.y));
-                // Fire 4-way cross
-                this.fireCross(4, 200);
-            }
-            // Spawn 2 phasewraiths every 8s
-            if (this.minionTimer <= 0) {
-                this.minionTimer = 8;
-                this.minionQueue.push({ type: 'phasewraith', count: 2, x: this.x, y: this.y });
-            }
-        } else if (this.state === 'phase2') {
-            // Faster teleport + 8-way + void zones + shielder minions
             if (this.attackTimer <= 0) {
                 this.attackTimer = 2.5;
+                const angle = Math.random() * Math.PI * 2;
+                const teleportDist = 140 + Math.random() * 80;
+                this.x = Math.max(50, Math.min(750, player.x + Math.cos(angle) * teleportDist));
+                this.y = Math.max(50, Math.min(1250, player.y + Math.sin(angle) * teleportDist));
+                this.fireCross(6, 220);
+            }
+            if (this.minionTimer <= 0) {
+                this.minionTimer = 6;
+                this.minionQueue.push({ type: 'phasewraith', count: 3, x: this.x, y: this.y });
+            }
+        } else if (this.state === 'phase2') {
+            if (this.attackTimer <= 0) {
+                this.attackTimer = 1.6;
                 const prevX = this.x;
                 const prevY = this.y;
                 const angle = Math.random() * Math.PI * 2;
                 const teleportDist = 120 + Math.random() * 80;
-                this.x = player.x + Math.cos(angle) * teleportDist;
-                this.y = player.y + Math.sin(angle) * teleportDist;
-                this.x = Math.max(50, Math.min(750, this.x));
-                this.y = Math.max(50, Math.min(1250, this.y));
-                // Leave void zone at old position
-                this.voidZones.push({ x: prevX, y: prevY, radius: 60, timer: 3.0, damage: 15 });
-                // 8-way cross
-                this.fireCross(8, 220);
+                this.x = Math.max(50, Math.min(750, player.x + Math.cos(angle) * teleportDist));
+                this.y = Math.max(50, Math.min(1250, player.y + Math.sin(angle) * teleportDist));
+                this.voidZones.push({ x: prevX, y: prevY, radius: 70, timer: 4.0, damage: 20 });
+                this.fireCross(10, 250);
             }
             if (this.minionTimer <= 0) {
-                this.minionTimer = 6;
+                this.minionTimer = 5;
                 this.minionQueue.push({ type: 'shielder', count: 3, x: this.x, y: this.y });
+            }
+        } else if (this.state === 'phase3') {
+            // Enrage: Rapid teleport every 1.0s + 14-way cross + persistent void pools
+            if (this.attackTimer <= 0) {
+                this.attackTimer = 1.0;
+                const prevX = this.x;
+                const prevY = this.y;
+                const angle = Math.random() * Math.PI * 2;
+                this.x = Math.max(50, Math.min(750, player.x + Math.cos(angle) * 110));
+                this.y = Math.max(50, Math.min(1250, player.y + Math.sin(angle) * 110));
+                this.voidZones.push({ x: prevX, y: prevY, radius: 80, timer: 5.0, damage: 25 });
+                this.fireCross(14, 280);
             }
         }
     }
 
     // ---- SWARM HIVE (Level 15) ----
     private updateSwarmHive(dt: number, _dx: number, _dy: number, _dist: number, player: Player) {
-        // Stationary — drifts very slowly toward center of screen
         const centerX = 400;
         const centerY = 400;
         const toCenterDx = centerX - this.x;
@@ -436,7 +439,6 @@ export class Boss {
         this.attackTimer -= dt;
         this.minionTimer -= dt;
 
-        // Regen shield mechanics
         if (this.state === 'phase2' && !this.isRegenerating) {
             this.regenShieldTimer -= dt;
             if (this.regenShieldTimer <= 0) {
@@ -445,29 +447,36 @@ export class Boss {
             }
         }
         if (this.isRegenerating) {
-            // Heal 1% maxHP per second while shield is up
-            this.hp = Math.min(this.maxHp, this.hp + this.maxHp * 0.01 * dt);
+            this.hp = Math.min(this.maxHp, this.hp + this.maxHp * 0.012 * dt);
         }
 
         if (this.state === 'phase1') {
-            // Slow homing spores
             if (this.attackTimer <= 0) {
-                this.attackTimer = 2.0;
-                this.fireHomingSpores(3, player);
+                this.attackTimer = 1.5;
+                this.fireHomingSpores(4, player);
             }
-            // Spawn glitch swarm clusters
             if (this.minionTimer <= 0) {
-                this.minionTimer = 4;
-                this.minionQueue.push({ type: 'glitch_swarm', count: 5, x: this.x, y: this.y });
+                this.minionTimer = 3.5;
+                this.minionQueue.push({ type: 'glitch_swarm', count: 6, x: this.x, y: this.y });
             }
         } else if (this.state === 'phase2') {
             if (this.attackTimer <= 0) {
-                this.attackTimer = 1.5;
-                this.fireHomingSpores(5, player);
+                this.attackTimer = 1.2;
+                this.fireHomingSpores(6, player);
+            }
+            if (this.minionTimer <= 0) {
+                this.minionTimer = 2.0;
+                this.minionQueue.push({ type: 'glitch_swarm', count: 6, x: this.x, y: this.y });
+            }
+        } else if (this.state === 'phase3') {
+            // Enrage: Spawns Kamikazes + 8 homing spores every 0.8s
+            if (this.attackTimer <= 0) {
+                this.attackTimer = 0.8;
+                this.fireHomingSpores(8, player);
             }
             if (this.minionTimer <= 0) {
                 this.minionTimer = 2.5;
-                this.minionQueue.push({ type: 'glitch_swarm', count: 5, x: this.x, y: this.y });
+                this.minionQueue.push({ type: 'kamikaze', count: 2, x: this.x, y: this.y });
             }
         }
     }
@@ -477,43 +486,11 @@ export class Boss {
         this.attackTimer -= dt;
 
         if (this.state === 'phase1') {
-            // Dash at player every 3s
             if (this.attackTimer <= 0 && !this.isDashing) {
-                this.attackTimer = 3.0;
+                this.attackTimer = 2.2;
                 this.isDashing = true;
                 this.dashTarget = { x: player.x, y: player.y };
-                this.fireHoming(2);
-            }
-
-            if (this.isDashing) {
-                const dashDx = this.dashTarget.x - this.x;
-                const dashDy = this.dashTarget.y - this.y;
-                const dashDist = Math.hypot(dashDx, dashDy);
-                if (dashDist > 20) {
-                    const dashSpeed = 400;
-                    this.x += (dashDx / dashDist) * dashSpeed * dt;
-                    this.y += (dashDy / dashDist) * dashSpeed * dt;
-                    // Leave trail
-                    this.dashTrail.push({ x: this.x, y: this.y, timer: 2.0 });
-                } else {
-                    this.isDashing = false;
-                }
-            } else {
-                // Orbit player
-                if (dist > 250) {
-                    this.x += (dx / dist) * this.speed * dt;
-                    this.y += (dy / dist) * this.speed * dt;
-                }
-            }
-        } else if (this.state === 'phase2') {
-            // Faster dashes + time distortion field
-            if (this.attackTimer <= 0 && !this.isDashing) {
-                this.attackTimer = 2.0;
-                this.isDashing = true;
-                this.dashTarget = { x: player.x, y: player.y };
-                this.fireHoming(2);
-                this.addTelegraph(this.x, this.y, 200, 0.3, 'rgba(103,232,249,0.2)');
-                this.distortionFields.push({ x: this.x, y: this.y, radius: 200, timer: 5.0 });
+                this.fireHoming(3);
             }
 
             if (this.isDashing) {
@@ -524,9 +501,7 @@ export class Boss {
                     const dashSpeed = 500;
                     this.x += (dashDx / dashDist) * dashSpeed * dt;
                     this.y += (dashDy / dashDist) * dashSpeed * dt;
-                    this.dashTrail.push({ x: this.x, y: this.y, timer: 2.0 });
-                    // Fire ring during dash
-                    if (Math.random() < 0.1) this.fireRing(6, 150);
+                    this.dashTrail.push({ x: this.x, y: this.y, timer: 2.5 });
                 } else {
                     this.isDashing = false;
                 }
@@ -536,21 +511,49 @@ export class Boss {
                     this.y += (dy / dist) * this.speed * dt;
                 }
             }
-        } else if (this.state === 'phase3') {
-            // Extremely fast dashes, 3 distortion fields, homing stream
+        } else if (this.state === 'phase2') {
             if (this.attackTimer <= 0 && !this.isDashing) {
                 this.attackTimer = 1.5;
                 this.isDashing = true;
                 this.dashTarget = { x: player.x, y: player.y };
-                this.fireHoming(3);
-                // Place 3 distortion fields
+                this.fireHoming(4);
+                this.addTelegraph(this.x, this.y, 220, 0.3, 'rgba(103,232,249,0.25)');
+                this.distortionFields.push({ x: this.x, y: this.y, radius: 220, timer: 5.0 });
+            }
+
+            if (this.isDashing) {
+                const dashDx = this.dashTarget.x - this.x;
+                const dashDy = this.dashTarget.y - this.y;
+                const dashDist = Math.hypot(dashDx, dashDy);
+                if (dashDist > 20) {
+                    const dashSpeed = 650;
+                    this.x += (dashDx / dashDist) * dashSpeed * dt;
+                    this.y += (dashDy / dashDist) * dashSpeed * dt;
+                    this.dashTrail.push({ x: this.x, y: this.y, timer: 2.5 });
+                    if (Math.random() < 0.15) this.fireRing(8, 180);
+                } else {
+                    this.isDashing = false;
+                }
+            } else {
+                if (dist > 180) {
+                    this.x += (dx / dist) * this.speed * dt;
+                    this.y += (dy / dist) * this.speed * dt;
+                }
+            }
+        } else if (this.state === 'phase3') {
+            // Enrage: 750 px/s hyper dashes, 4 distortion fields, homing stream
+            if (this.attackTimer <= 0 && !this.isDashing) {
+                this.attackTimer = 1.0;
+                this.isDashing = true;
+                this.dashTarget = { x: player.x, y: player.y };
+                this.fireHoming(5);
                 for (let i = 0; i < 3; i++) {
                     const a = Math.random() * Math.PI * 2;
-                    const r = 100 + Math.random() * 150;
+                    const r = 80 + Math.random() * 140;
                     this.distortionFields.push({
                         x: player.x + Math.cos(a) * r,
                         y: player.y + Math.sin(a) * r,
-                        radius: 150,
+                        radius: 160,
                         timer: 5.0
                     });
                 }
@@ -561,56 +564,75 @@ export class Boss {
                 const dashDy = this.dashTarget.y - this.y;
                 const dashDist = Math.hypot(dashDx, dashDy);
                 if (dashDist > 20) {
-                    const dashSpeed = 600;
+                    const dashSpeed = 750;
                     this.x += (dashDx / dashDist) * dashSpeed * dt;
                     this.y += (dashDy / dashDist) * dashSpeed * dt;
-                    this.dashTrail.push({ x: this.x, y: this.y, timer: 2.0 });
+                    this.dashTrail.push({ x: this.x, y: this.y, timer: 2.5 });
                 } else {
                     this.isDashing = false;
                 }
             } else {
-                this.x += (dx / dist) * this.speed * 1.5 * dt;
-                this.y += (dy / dist) * this.speed * 1.5 * dt;
+                this.x += (dx / dist) * this.speed * 1.6 * dt;
+                this.y += (dy / dist) * this.speed * 1.6 * dt;
             }
         }
     }
 
-    // ---- APEX PREDATOR (Level 25) ----
+    // ---- APEX PREDATOR (Level 25) - ULTIMATE HARDEST BOSS ----
     private updateApexPredator(dt: number, dx: number, dy: number, dist: number, player: Player) {
-        this.x += (dx / dist) * this.speed * dt;
-        this.y += (dy / dist) * this.speed * dt;
-
         this.attackTimer -= dt;
         this.minionTimer -= dt;
 
         if (this.state === 'phase1') {
+            this.speed = 120;
+            if (dist > 150) {
+                this.x += (dx / dist) * this.speed * dt;
+                this.y += (dy / dist) * this.speed * dt;
+            }
             if (this.attackTimer <= 0) {
-                this.attackTimer = 1.5;
-                this.fireBurstTarget(player, 3);
+                this.attackTimer = 1.2;
+                this.fireBurstTarget(player, 5);
+                this.fireRing(12, 220);
             }
         } else if (this.state === 'phase2') {
-            this.speed = 160;
+            this.speed = 180;
+            if (dist > 100) {
+                this.x += (dx / dist) * this.speed * dt;
+                this.y += (dy / dist) * this.speed * dt;
+            }
             if (this.attackTimer <= 0) {
-                this.attackTimer = 1.5;
+                this.attackTimer = 0.9;
                 if (this.attackCycle % 2 === 0) {
-                    this.fireRing(12, 250);
+                    this.fireRing(18, 280);
+                    this.fireHoming(3);
                 } else {
-                    this.fireHoming(2);
+                    this.fireBurstTarget(player, 7);
+                    this.fireCross(6, 250);
                 }
                 this.attackCycle++;
             }
-            // Summon brute every 10s
+            // Summon Brutes + Kamikazes
             if (this.minionTimer <= 0) {
-                this.minionTimer = 10;
+                this.minionTimer = 6;
                 this.minionQueue.push({ type: 'brute', count: 1, x: this.x, y: this.y });
+                this.minionQueue.push({ type: 'kamikaze', count: 2, x: this.x, y: this.y });
             }
         } else if (this.state === 'phase3') {
-            this.speed = 220;
+            // APEX OVERDRIVE (Phase 3 Enrage): 250 px/s speed, 24-bullet ring barrage + 5 homing seeker missiles every 0.6s!
+            this.speed = 250;
+            if (dist > 60) {
+                this.x += (dx / dist) * this.speed * dt;
+                this.y += (dy / dist) * this.speed * dt;
+            }
             if (this.attackTimer <= 0) {
-                this.attackTimer = 1.5;
-                // Simultaneous ring + homing
-                this.fireRing(16, 250);
-                this.fireHoming(3);
+                this.attackTimer = 0.65; // Ultra fast assault!
+                this.fireRing(24, 320);
+                this.fireHoming(5);
+                this.fireBurstTarget(player, 7);
+            }
+            if (this.minionTimer <= 0) {
+                this.minionTimer = 4.5;
+                this.minionQueue.push({ type: 'kamikaze', count: 3, x: this.x, y: this.y });
             }
         }
     }

@@ -24,12 +24,13 @@ export class WaveManager {
     private empSpawnTimer: number = 5.0; // First EMP hazard spawns at 5s
 
     public activeBoss: Boss | null = null;
-    private bossMilestones = [
-        { level: 5, type: 'core_sentinel' as BossType, spawned: false },
-        { level: 10, type: 'void_weaver' as BossType, spawned: false },
-        { level: 15, type: 'swarm_hive' as BossType, spawned: false },
-        { level: 20, type: 'chrono_wraith' as BossType, spawned: false },
-        { level: 25, type: 'apex_predator' as BossType, spawned: false }
+    public lastSpawnedBossLevel: number = 0;
+    private bossTypeList: BossType[] = [
+        'core_sentinel',
+        'void_weaver',
+        'swarm_hive',
+        'chrono_wraith',
+        'apex_predator'
     ];
 
     constructor(bounds: { width: number, height: number }) {
@@ -70,14 +71,18 @@ export class WaveManager {
         }
 
         if (!this.activeBoss) {
-            for (const milestone of this.bossMilestones) {
-                if (!milestone.spawned && currentLevel >= milestone.level) {
-                    milestone.spawned = true;
-                    const timeScale = this.getTimeScale();
-                    // Spawn at top edge so it's visible immediately
-                    this.activeBoss = new Boss(this.bounds.width / 2, 50, milestone.type, timeScale);
-                    return;
-                }
+            // Spawn boss every 5 levels (L5, L10, L15, L20, L25, L30, L35...)
+            if (currentLevel >= 5 && currentLevel >= this.lastSpawnedBossLevel + 5) {
+                this.lastSpawnedBossLevel = Math.floor(currentLevel / 5) * 5;
+                const bossIndex = (Math.floor(this.lastSpawnedBossLevel / 5) - 1) % this.bossTypeList.length;
+                const bossType = this.bossTypeList[bossIndex];
+                
+                // Repeat cycles scale HP/damage further (+50% HP per loop)
+                const loopCycle = Math.floor((this.lastSpawnedBossLevel - 5) / 25);
+                const timeScale = this.getTimeScale() * (1 + loopCycle * 0.5);
+
+                this.activeBoss = new Boss(this.bounds.width / 2, 50, bossType, timeScale);
+                return;
             }
         }
 
