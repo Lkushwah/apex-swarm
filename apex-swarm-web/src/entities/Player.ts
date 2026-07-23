@@ -89,6 +89,13 @@ export class Player {
         if (this.hpRegen > 0 && this.hp < this.maxHp) {
             this.hp = Math.min(this.maxHp, this.hp + this.hpRegen * dt);
         }
+
+        // Lifesteal cap timer reset
+        this.lifestealResetTimer += dt;
+        if (this.lifestealResetTimer >= 1.0) {
+            this.lifestealResetTimer = 0;
+            this.lifestealHealedThisSecond = 0;
+        }
     }
 
     public dash(targetPos: { x: number, y: number }) {
@@ -143,6 +150,8 @@ export class Player {
         ctx.globalAlpha = 1.0;
     }
 
+    public lifestealHealedThisSecond: number = 0;
+    public lifestealResetTimer: number = 0;
 
     public takeDamage(amount: number): boolean {
         if (this.invincibilityTimer > 0) return false;
@@ -155,6 +164,17 @@ export class Player {
 
     public heal(amount: number) {
         this.hp = Math.min(this.maxHp, this.hp + amount);
+    }
+
+    public lifestealHeal(amount: number) {
+        // Cap lifesteal at max 20% of max HP per second
+        const maxAllowedPerSec = this.maxHp * 0.20;
+        const remainingCap = Math.max(0, maxAllowedPerSec - this.lifestealHealedThisSecond);
+        const actualHeal = Math.min(amount, remainingCap);
+        if (actualHeal > 0) {
+            this.lifestealHealedThisSecond += actualHeal;
+            this.heal(actualHeal);
+        }
     }
 
 

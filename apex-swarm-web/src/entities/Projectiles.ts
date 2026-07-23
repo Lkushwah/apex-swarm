@@ -63,7 +63,7 @@ export class MissileProjectile extends Projectile {
                 other.hp -= finalDamage;
 
                 const totalLifesteal = (apexSystem?.lifesteal ?? 0) + player.globalLifesteal;
-                if (totalLifesteal > 0) player.heal(dmgDealt * totalLifesteal);
+                if (totalLifesteal > 0) player.lifestealHeal(dmgDealt * totalLifesteal);
 
                 // Floating text
                 Projectile.floatingTexts.push(new FloatingText(
@@ -138,7 +138,7 @@ export class PlasmaOrbProjectile extends Projectile {
                 e.hp -= d;
 
                 const totalLifesteal = (apexSystem?.lifesteal ?? 0) + player.globalLifesteal;
-                if (totalLifesteal > 0) player.heal(dmgDealt * totalLifesteal);
+                if (totalLifesteal > 0) player.lifestealHeal(dmgDealt * totalLifesteal);
             }
         }
     }
@@ -188,7 +188,7 @@ export class ChainLightningProjectile extends Projectile {
         e.hp -= currentDamage;
 
         const totalLifesteal = (apexSystem?.lifesteal ?? 0) + player.globalLifesteal;
-        if (totalLifesteal > 0) player.heal(dmgDealt * totalLifesteal);
+        if (totalLifesteal > 0) player.lifestealHeal(dmgDealt * totalLifesteal);
 
         // Floating text
         Projectile.floatingTexts.push(new FloatingText(
@@ -302,7 +302,7 @@ export class ScytheArcProjectile extends Projectile {
                 
                 // Melee lifesteal from passive + global + apex
                 const totalLifesteal = (apexSystem?.lifesteal ?? 0) + player.meleeLifesteal + player.globalLifesteal;
-                if (totalLifesteal > 0) player.heal(dmgDealt * totalLifesteal);
+                if (totalLifesteal > 0) player.lifestealHeal(dmgDealt * totalLifesteal);
 
                 // Floating text
                 Projectile.floatingTexts.push(new FloatingText(
@@ -388,7 +388,7 @@ export class RailgunBeam extends Projectile {
                 e.hp -= finalDamage;
 
                 const totalLifesteal = (apexSystem?.lifesteal ?? 0) + player.globalLifesteal;
-                if (totalLifesteal > 0) player.heal(dmgDealt * totalLifesteal);
+                if (totalLifesteal > 0) player.lifestealHeal(dmgDealt * totalLifesteal);
 
                 Projectile.floatingTexts.push(new FloatingText(
                     e.x, e.y - 10,
@@ -460,7 +460,7 @@ export class SingularityRing extends Projectile {
                 e.hp -= d;
 
                 const totalLifesteal = (apexSystem?.lifesteal ?? 0) + player.globalLifesteal;
-                if (totalLifesteal > 0) player.heal(dmgDealt * totalLifesteal);
+                if (totalLifesteal > 0) player.lifestealHeal(dmgDealt * totalLifesteal);
             }
         }
     }
@@ -525,7 +525,7 @@ export class StormFrontPulse extends Projectile {
                 e.hp -= finalDamage;
 
                 const totalLifesteal = (apexSystem?.lifesteal ?? 0) + player.globalLifesteal;
-                if (totalLifesteal > 0) player.heal(dmgDealt * totalLifesteal);
+                if (totalLifesteal > 0) player.lifestealHeal(dmgDealt * totalLifesteal);
 
                 Projectile.floatingTexts.push(new FloatingText(
                     e.x, e.y - 10,
@@ -597,7 +597,7 @@ export class RealityTearPulse extends Projectile {
 
                 // 100% lifesteal bonus for Reality Tear + normal lifesteal
                 const totalLifesteal = 1.0 + (apexSystem?.lifesteal ?? 0) + player.globalLifesteal;
-                player.heal(dmgDealt * totalLifesteal);
+                player.lifestealHeal(dmgDealt * totalLifesteal);
 
                 Projectile.floatingTexts.push(new FloatingText(
                     e.x, e.y - 10,
@@ -657,7 +657,7 @@ export class HiveMindLaser extends Projectile {
             this.target.hp -= d;
 
             const totalLifesteal = (apexSystem?.lifesteal ?? 0) + player.globalLifesteal;
-            if (totalLifesteal > 0) player.heal(dmgDealt * totalLifesteal);
+            if (totalLifesteal > 0) player.lifestealHeal(dmgDealt * totalLifesteal);
         } else {
             this.isDead = true;
         }

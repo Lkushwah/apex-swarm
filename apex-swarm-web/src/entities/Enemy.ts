@@ -94,7 +94,9 @@ export class Enemy {
         this.shape = config.shape;
         this.color = config.color;
         this.radius = config.radiusBase + (type === 'swarmer' ? Math.random() * 4 : 0);
-        this.speed = config.baseSpeed * (type === 'swarmer' ? (0.8 + Math.random() * 0.4) : 1) * (timeScale * 0.8);
+        // Speed scales gracefully with time, capped at 1.6x base speed max
+        const speedScale = Math.min(1.6, 1 + (timeScale - 1) * 0.03);
+        this.speed = config.baseSpeed * (type === 'swarmer' ? (0.8 + Math.random() * 0.4) : 1) * speedScale;
         this.maxHp = config.baseHp * timeScale;
         this.hp = this.maxHp;
         this.damage = config.baseDamage;

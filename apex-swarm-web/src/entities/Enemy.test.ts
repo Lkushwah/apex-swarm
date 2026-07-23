@@ -22,8 +22,8 @@ describe('Enemy Entity Unit Tests', () => {
         
         expect(enemy.maxHp).toBe(ENEMY_CONFIGS['brute'].baseHp * 2);
         expect(enemy.hp).toBe(ENEMY_CONFIGS['brute'].baseHp * 2);
-        // brute speed scaling: baseSpeed * 1 * (timeScale * 0.8)
-        expect(enemy.speed).toBeCloseTo(ENEMY_CONFIGS['brute'].baseSpeed * 2.0 * 0.8);
+        const expectedSpeedScale = Math.min(1.6, 1 + (timeScale - 1) * 0.03);
+        expect(enemy.speed).toBeCloseTo(ENEMY_CONFIGS['brute'].baseSpeed * expectedSpeedScale);
     });
 
     it('Swarmer should deal damage and die on collision with player', () => {

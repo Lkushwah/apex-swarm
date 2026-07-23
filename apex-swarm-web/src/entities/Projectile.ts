@@ -68,7 +68,7 @@ export class Projectile {
         const totalLifesteal = (apexSystem?.lifesteal ?? 0) + player.globalLifesteal;
         if (totalLifesteal > 0) {
             const healAmount = dmgDealt * totalLifesteal;
-            player.heal(healAmount);
+            player.lifestealHeal(healAmount);
             // +HP floating text
             if (healAmount >= 1) {
                 Projectile.floatingTexts.push(new FloatingText(

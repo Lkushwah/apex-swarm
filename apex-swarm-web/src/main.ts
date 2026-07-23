@@ -750,7 +750,13 @@ const gameLoop = new GameLoop(
             apexSystem.fillRateBonus = (saveManager.getUpgradeLevel('perm_apex_fill') * 0.06) + (apexCapPassive.level * 0.08);
         }
 
-        uiManager.updateHUD(player.hp, player.maxHp, player.xp, player.xpToNext, player.level, waveManager.survivalTime, saveManager.getCredits(), apexSystem.meter, saveManager.getCores());
+        uiManager.updateHUD(
+            player.hp, player.maxHp, player.xp, player.xpToNext, player.level,
+            waveManager.survivalTime,
+            saveManager.getCredits() + creditsEarnedThisRun,
+            apexSystem.meter,
+            saveManager.getCores() + coresEarnedThisRun
+        );
     },
 
     // RENDER
